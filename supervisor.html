@@ -2,257 +2,151 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة الدعم الفني - إدارة فهد المخلفي</title>
+    <title>لوحة الرقباء - نظام فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root {
-            --primary: #1a365d;
-            --accent: #2d3748;
-            --success: #2f855a;
-            --danger: #c53030;
-            --bg: #edf2f7;
-        }
+        :root { --primary: #1e293b; --accent: #2563eb; --success: #059669; --warning: #d97706; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .container { max-width: 1100px; margin: auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 25px; border-top: 4px solid var(--accent); }
+        h2 { font-size: 1.2rem; margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        
+        /* جداول البيانات */
+        .table-wrapper { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 600px; }
+        th, td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        th { background: #f1f5f9; color: #475569; }
+        
+        /* حالات الطلب */
+        .status { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .status-pending { background: #fef3c7; color: #92400e; } /* قيد الانتظار */
+        .status-approved { background: #dcfce7; color: #166534; } /* تم القبول */
+        .status-rejected { background: #fee2e2; color: #991b1b; } /* تم الرفض */
 
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 0;
-        }
-
-        .navbar {
-            background: var(--primary);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .main-container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        h2 {
-            color: var(--primary);
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 1.4rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        label {
-            font-weight: 600;
-            color: #4a5568;
-            font-size: 0.9rem;
-        }
-
-        input {
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            transition: 0.3s;
-        }
-
-        input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            color: white;
-        }
-
-        .btn-add { background: var(--success); width: 100%; }
-        .btn-update { background: var(--primary); width: 100%; }
-        .btn-delete { background: var(--danger); padding: 5px 10px; font-size: 12px; }
-
-        .table-responsive {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: right;
-        }
-
-        th, td {
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        th { background: #f7fafc; color: #718096; }
-
-        .secret-badge {
-            background: #fff5f5;
-            color: #c53030;
-            padding: 4px 8px;
-            border-radius: 5px;
-            font-family: monospace;
-            border: 1px solid #feb2b2;
-        }
-
-        @media (min-width: 992px) {
-            .main-container { grid-template-columns: 2fr 1fr; }
-        }
+        .profile-info { background: #f0f7ff; border: 1px solid #cfe2ff; }
     </style>
 </head>
 <body>
 
-    <div class="navbar">
-        <h1 style="margin:0;">🛠️ لوحة الدعم الفني</h1>
-        <p style="margin:5px 0 0; opacity: 0.8;">إدارة بيانات الرقباء ورموز الشؤون الإدارية</p>
-    </div>
-
-    <div class="main-container">
-        
-        <div class="card">
-            <h2>👥 إضافة رقباء جدد</h2>
-            <div class="form-grid">
-                <div class="input-group">
-                    <label>الاسم الكامل</label>
-                    <input type="text" id="supName" placeholder="الاسم الرباعي">
-                </div>
-                <div class="input-group">
-                    <label>الرتبة</label>
-                    <input type="text" id="supRank" placeholder="الرتبة">
-                </div>
-                <div class="input-group">
-                    <label>رقم الهوية</label>
-                    <input type="number" id="supID">
-                </div>
-                <div class="input-group">
-                    <label>رقم الجوال</label>
-                    <input type="text" id="supPhone">
-                </div>
-                <div class="input-group">
-                    <label>الرمز السري</label>
-                    <input type="text" id="supPass" placeholder="رمز الدخول">
-                </div>
-            </div>
-            <button class="btn btn-add" onclick="addSup()">حفظ وإرسال للسحابة ✅</button>
-
-            <div class="table-responsive">
-                <h3>السجلات الحالية</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>الرتبة</th>
-                            <th>الهوية</th>
-                            <th>الرمز</th>
-                            <th>إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody id="supList"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card" style="border-top: 5px solid var(--primary);">
-            <h2>🔐 إدارة رمز الشؤون الإدارية</h2>
-            <p style="font-size: 0.8rem; color: #718096; margin-bottom: 20px;">تغيير الرمز الذي يفتح قسم الشؤون الإدارية من الصفحة الرئيسية.</p>
-            <div class="input-group" style="margin-bottom: 15px;">
-                <label>الرمز السري الجديد</label>
-                <input type="text" id="adminPass" placeholder="أدخل الرمز الجديد">
-            </div>
-            <button class="btn btn-update" onclick="updateAdminPass()">تحديث الرمز الآن</button>
-        </div>
-
-    </div>
-
-    <script>
-        // إعدادات Firebase
-        const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // إضافة رقيب
-        function addSup() {
-            const name = document.getElementById('supName').value;
-            const rank = document.getElementById('supRank').value;
-            const idNo = document.getElementById('supID').value;
-            const phone = document.getElementById('supPhone').value;
-            const pass = document.getElementById('supPass').value;
-
-            if(!name || !pass || !idNo) { alert("أكمل البيانات المطلوبة"); return; }
-
-            db.ref('supervisors').push({
-                name: name,
-                rank: rank,
-                nationalId: idNo,
-                phone: phone,
-                secretCode: pass
-            }).then(() => {
-                alert("تمت الإضافة بنجاح!");
-                document.querySelectorAll('.card input:not(#adminPass)').forEach(i => i.value = '');
-            });
-        }
-
-        // عرض القائمة
-        db.ref('supervisors').on('value', (snapshot) => {
-            const list = document.getElementById('supList');
-            list.innerHTML = '';
-            snapshot.forEach((child) => {
-                const data = child.val();
-                list.innerHTML += `
+<div class="container">
+    <div class="card profile-info">
+        <h2>🪪 بيانات الرقيب المسؤول</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
                     <tr>
-                        <td><b>${data.name}</b></td>
-                        <td>${data.rank}</td>
-                        <td>${data.nationalId}</td>
-                        <td><span class="secret-badge">${data.secretCode}</span></td>
-                        <td><button class="btn btn-delete" onclick="deleteSup('${child.key}')">حذف</button></td>
-                    </tr>`;
-            });
+                        <th>الاسم</th>
+                        <th>الرتبة</th>
+                        <th>رقم الهوية</th>
+                        <th>رقم الجوال</th>
+                    </tr>
+                </thead>
+                <tbody id="profileData">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📩 طلبات الاستئذان الواردة</h2>
+        <p style="font-size: 0.8rem; color: #64748b;">هنا تظهر طلبات الأفراد لاعتمادها أو توجيهها للإدارة.</p>
+        <div id="newRequests">
+            </div>
+    </div>
+
+    <div class="card" style="border-top-color: var(--warning);">
+        <h2>⏳ متابعة الطلبات الموجهة للإدارة</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم الفرد</th>
+                        <th>نوع الطلب</th>
+                        <th>وقت التوجيه</th>
+                        <th>حالة الطلب لدى الإدارة</th>
+                    </tr>
+                </thead>
+                <tbody id="followUpList">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // إعدادات Firebase
+    const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // جلب بيانات الرقيب من الذاكرة المحلية (التي خزنها نظام الدعم الفني عند الدخول)
+    const currentName = localStorage.getItem('currentSupervisor');
+    
+    // 1. جلب بيانات الرقيب الكاملة من قاعدة البيانات لعرضها في الجدول العلوي
+    db.ref('supervisors').orderByChild('name').equalTo(currentName).on('value', snapshot => {
+        const profileBody = document.getElementById('profileData');
+        profileBody.innerHTML = '';
+        snapshot.forEach(child => {
+            const data = child.val();
+            profileBody.innerHTML = `
+                <tr>
+                    <td><b>${data.name}</b></td>
+                    <td>${data.rank}</td>
+                    <td>${data.nationalId}</td>
+                    <td>${data.phone}</td>
+                </tr>`;
         });
+    });
 
-        function deleteSup(id) {
-            if(confirm("هل أنت متأكد من الحذف؟")) db.ref('supervisors/' + id).remove();
-        }
+    // 2. جلب الطلبات ومتابعة الحالات
+    db.ref('requests').on('value', snapshot => {
+        const followUpList = document.getElementById('followUpList');
+        const newRequests = document.getElementById('newRequests');
+        
+        followUpList.innerHTML = '';
+        newRequests.innerHTML = '';
 
-        // تحديث رمز الشؤون الإدارية
-        function updateAdminPass() {
-            const newPass = document.getElementById('adminPass').value;
-            if(!newPass) return;
-            db.ref('adminSettings/adminSecretCode').set(newPass).then(() => {
-                alert("تم تحديث رمز الإدارة بنجاح ✅");
-                document.getElementById('adminPass').value = '';
-            });
-        }
-    </script>
+        snapshot.forEach(child => {
+            const req = child.val();
+            
+            // حالة متابعة الطلبات الموجهة للإدارة
+            if (req.directedToAdmin === true) {
+                let statusClass = 'status-pending';
+                let statusText = 'قيد معالجة الإدارة';
+                
+                if (req.adminAction === 'approved') { statusClass = 'status-approved'; statusText = 'تم القبول'; }
+                if (req.adminAction === 'rejected') { statusClass = 'status-rejected'; statusText = 'مرفوض'; }
+
+                followUpList.innerHTML += `
+                    <tr>
+                        <td>${req.userName}</td>
+                        <td>${req.requestType}</td>
+                        <td>${req.directionTime || 'غير محدد'}</td>
+                        <td><span class="status ${statusClass}">${statusText}</span></td>
+                    </tr>`;
+            }
+            
+            // الطلبات الجديدة التي لم توجه بعد (للمعالجة)
+            else if (!req.actionBy) {
+                // كود عرض البطاقات لاتخاذ إجراء (قبول/رفض/توجيه)
+                // ... (نفس الكود السابق لمعالجة الطلبات)
+            }
+        });
+    });
+
+    // وظيفة توجيه الطلب للإدارة (تحدث الحالة ليظهر في جدول المتابعة)
+    function directToAdmin(reqId) {
+        db.ref('requests/' + reqId).update({
+            directedToAdmin: true,
+            directionTime: new Date().toLocaleTimeString(),
+            directedBy: currentName
+        }).then(() => {
+            alert("تم توجيه الطلب للإدارة بنجاح");
+        });
+    }
+</script>
 </body>
+</html>
 </html>
