@@ -2,264 +2,148 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة الرقباء - نظام فهد المخلفي</title>
+    <title>دخول الرقباء - نظام فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root {
-            --primary: #1e293b;
-            --accent: #2563eb;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
+        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+
+        /* شاشة طلب الكود السري */
+        #authScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1e293b; display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .auth-box {
+            background: white; padding: 35px; border-radius: 20px;
+            text-align: center; width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .auth-box h2 { color: var(--primary); margin-bottom: 20px; }
+        .auth-box input {
+            width: 100%; padding: 15px; margin-bottom: 20px;
+            border: 2px solid #e2e8f0; border-radius: 12px; font-size: 18px; text-align: center; box-sizing: border-box;
+        }
+        .btn-auth {
+            background: var(--accent); color: white; border: none; width: 100%;
+            padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 0;
-            color: var(--primary);
-        }
-
-        /* شاشة الدخول السري */
-        #loginOverlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 350px;
-            border-top: 6px solid var(--accent);
-        }
-
-        .login-card input {
-            width: 100%;
-            padding: 15px;
-            margin: 20px 0;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .btn-login {
-            background: var(--accent);
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.3s;
-        }
-
-        /* المحتوى الرئيسي (مخفي حتى الدخول) */
-        #mainContent {
-            display: none;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
-
-        .profile-card {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            color: white;
-        }
-
-        h2 { font-size: 1.25rem; margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        /* محتوى الصفحة (مخفي) */
+        #mainContent { display: none; padding: 20px; max-width: 1100px; margin: auto; }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border-right: 5px solid var(--accent); }
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: right;
-            margin-top: 15px;
-        }
-
-        th, td {
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 0.95rem;
-        }
-
-        th { color: #64748b; font-weight: 600; }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .pending { background: #fef3c7; color: #92400e; }
+        table { width: 100%; border-collapse: collapse; text-align: right; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        th { background: #f8fafc; color: #64748b; }
+        
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
         .approved { background: #dcfce7; color: #166534; }
-        .rejected { background: #fee2e2; color: #991b1b; }
+        .pending { background: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body>
 
-    <div id="loginOverlay">
-        <div class="login-card">
-            <h2>🔑 دخول المصرح لهم</h2>
-            <p style="color: #64748b;">الرجاء إدخال الرمز السري المخصص لك</p>
-            <input type="password" id="entryPass" placeholder="••••••••">
-            <button class="btn-login" onclick="verifyAccess()">دخول النظام</button>
+    <div id="authScreen">
+        <div class="auth-box">
+            <h2>🔑 دخول الرقباء</h2>
+            <p style="color: #64748b; font-size: 0.9rem;">أدخل الكود السري الخاص بك لعرض بياناتك</p>
+            <input type="password" id="svCode" placeholder="أدخل الكود هنا">
+            <button class="btn-auth" onclick="loginSupervisor()">دخول النظام</button>
         </div>
     </div>
 
     <div id="mainContent">
-        <div class="header">
-            <h1>لوحة تحكم الرقيب المسؤول</h1>
-            <button class="btn-login" style="width: auto; background: var(--danger);" onclick="location.reload()">تسجيل خروج</button>
-        </div>
-
-        <div class="card profile-card">
-            <h2 style="color: #cbd5e1;">🪪 بيانات الرقيب الشخصية</h2>
-            <div style="overflow-x: auto;">
-                <table style="color: white; border: none;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid #475569;">
-                            <th style="color: #cbd5e1;">الاسم الكامل</th>
-                            <th style="color: #cbd5e1;">الرتبة</th>
-                            <th style="color: #cbd5e1;">رقم الهوية</th>
-                            <th style="color: #cbd5e1;">رقم الجوال</th>
-                        </tr>
-                    </thead>
-                    <tbody id="profileInfo">
-                        </tbody>
-                </table>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="color: var(--primary);">لوحة التحكم الخاصة</h1>
+            <button onclick="location.reload()" style="background:#e74c3c; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">خروج</button>
         </div>
 
         <div class="card">
-            <h2>⏳ متابعة الطلبات الموجهة للإدارة</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>اسم الفرد</th>
-                            <th>نوع الطلب</th>
-                            <th>وقت التوجيه</th>
-                            <th>حالة الطلب لدى الإدارة</th>
-                        </tr>
-                    </thead>
-                    <tbody id="followUpTable">
-                        </tbody>
-                </table>
-            </div>
+            <h3>🪪 بياناتك الرسمية</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الرتبة</th>
+                        <th>رقم الهوية</th>
+                        <th>رقم الجوال</th>
+                    </tr>
+                </thead>
+                <tbody id="profileData"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>⏳ متابعة الطلبات الموجهة للإدارة</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم الفرد</th>
+                        <th>الطلب</th>
+                        <th>الوقت</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="reqTable"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // إعدادات Firebase
-        const firebaseConfig = { 
-            databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" 
-        };
+        const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // وظيفة التحقق الآمنة
-        function verifyAccess() {
-            const userInput = document.getElementById('entryPass').value;
-            if (!userInput) return;
+        function loginSupervisor() {
+            const code = document.getElementById('svCode').value;
+            if(!code) return;
 
-            // البحث في السحابة عن رقيب يملك هذا الرمز
+            // التحقق من الكود في قسم الرقباء بالسحابة
             db.ref('supervisors').once('value', (snapshot) => {
-                let authFound = false;
-                let supervisorData = null;
-
+                let userFound = false;
                 snapshot.forEach((child) => {
-                    const sv = child.val();
-                    if (sv.secretCode === userInput) {
-                        authFound = true;
-                        supervisorData = sv;
+                    const data = child.val();
+                    if(data.secretCode === code) {
+                        userFound = true;
+                        showDashboard(data);
                     }
                 });
 
-                if (authFound) {
-                    // مسح الرمز من الذاكرة فوراً وإخفاء شاشة الدخول
-                    document.getElementById('entryPass').value = "";
-                    document.getElementById('loginOverlay').style.display = 'none';
-                    document.getElementById('mainContent').style.display = 'block';
-
-                    // عرض بيانات الرقيب وبدء متابعة الطلبات
-                    renderProfile(supervisorData);
-                    trackAdminRequests(supervisorData.name);
-                } else {
-                    alert("⚠️ الرمز السري غير صحيح. يرجى مراجعة الدعم الفني.");
-                    document.getElementById('entryPass').value = "";
+                if(!userFound) {
+                    alert("الكود غير صحيح! يرجى مراجعة الدعم الفني.");
+                    document.getElementById('svCode').value = "";
                 }
             });
         }
 
-        // عرض بيانات الرقيب في الجدول العلوي
-        function renderProfile(data) {
-            const profileBody = document.getElementById('profileInfo');
-            profileBody.innerHTML = `
+        function showDashboard(userData) {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // عرض البيانات الشخصية
+            document.getElementById('profileData').innerHTML = `
                 <tr>
-                    <td><b>${data.name}</b></td>
-                    <td>${data.rank}</td>
-                    <td>${data.nationalId}</td>
-                    <td>${data.phone}</td>
+                    <td><b>${userData.name}</b></td>
+                    <td>${userData.rank}</td>
+                    <td>${userData.nationalId}</td>
+                    <td>${userData.phone}</td>
                 </tr>`;
-        }
 
-        // متابعة الطلبات الموجهة وحالتها لدى الإدارة
-        function trackAdminRequests(supervisorName) {
+            // جلب طلبات الأفراد
             db.ref('requests').on('value', (snapshot) => {
-                const tableBody = document.getElementById('followUpTable');
-                tableBody.innerHTML = '';
-
-                snapshot.forEach((child) => {
+                const table = document.getElementById('reqTable');
+                table.innerHTML = '';
+                snapshot.forEach(child => {
                     const req = child.val();
-                    
-                    // إظهار الطلبات الموجهة للإدارة فقط لمتابعة حالتها
-                    if (req.directedToAdmin === true) {
-                        let statusHTML = '';
-                        if (req.adminAction === 'approved') {
-                            statusHTML = '<span class="status-badge approved">✅ تم القبول من الإدارة</span>';
-                        } else if (req.adminAction === 'rejected') {
-                            statusHTML = '<span class="status-badge rejected">❌ مرفوض من الإدارة</span>';
-                        } else {
-                            statusHTML = '<span class="status-badge pending">⏳ قيد المعالجة الإدارية</span>';
-                        }
-
-                        tableBody.innerHTML += `
+                    if(req.directedToAdmin) {
+                        table.innerHTML += `
                             <tr>
                                 <td>${req.userName}</td>
                                 <td>${req.requestType}</td>
                                 <td>${req.directionTime || '-'}</td>
-                                <td>${statusHTML}</td>
+                                <td><span class="status-badge ${req.adminAction === 'approved' ? 'approved' : 'pending'}">
+                                    ${req.adminAction === 'approved' ? '✅ مقبول' : '⏳ قيد المعالجة'}</span></td>
                             </tr>`;
                     }
                 });
