@@ -7,89 +7,224 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #1e293b; --accent: #2563eb; --success: #059669; --warning: #d97706; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
-        .container { max-width: 1100px; margin: auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 25px; border-top: 4px solid var(--accent); }
-        h2 { font-size: 1.2rem; margin-top: 0; display: flex; align-items: center; gap: 10px; }
-        
-        /* جداول البيانات */
-        .table-wrapper { overflow-x: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 600px; }
-        th, td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
-        th { background: #f1f5f9; color: #475569; }
-        
-        /* حالات الطلب */
-        .status { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .status-pending { background: #fef3c7; color: #92400e; } /* قيد الانتظار */
-        .status-approved { background: #dcfce7; color: #166534; } /* تم القبول */
-        .status-rejected { background: #fee2e2; color: #991b1b; } /* تم الرفض */
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+        }
 
-        .profile-info { background: #f0f7ff; border: 1px solid #cfe2ff; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--primary);
+        }
+
+        /* شاشة الدخول السري */
+        #loginOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 350px;
+            border-top: 6px solid var(--accent);
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .btn-login {
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        /* المحتوى الرئيسي (مخفي حتى الدخول) */
+        #mainContent {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .profile-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+        }
+
+        h2 { font-size: 1.25rem; margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        th { color: #64748b; font-weight: 600; }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .pending { background: #fef3c7; color: #92400e; }
+        .approved { background: #dcfce7; color: #166534; }
+        .rejected { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card profile-info">
-        <h2>🪪 بيانات الرقيب المسؤول</h2>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الرتبة</th>
-                        <th>رقم الهوية</th>
-                        <th>رقم الجوال</th>
-                    </tr>
-                </thead>
-                <tbody id="profileData">
-                    </tbody>
-            </table>
+    <div id="loginOverlay">
+        <div class="login-card">
+            <h2>🔑 دخول المصرح لهم</h2>
+            <p style="color: #64748b;">الرجاء إدخال الرمز السري المخصص لك</p>
+            <input type="password" id="entryPass" placeholder="••••••••">
+            <button class="btn-login" onclick="verifyAccess()">دخول النظام</button>
         </div>
     </div>
 
-    <div class="card">
-        <h2>📩 طلبات الاستئذان الواردة</h2>
-        <p style="font-size: 0.8rem; color: #64748b;">هنا تظهر طلبات الأفراد لاعتمادها أو توجيهها للإدارة.</p>
-        <div id="newRequests">
+    <div id="mainContent">
+        <div class="header">
+            <h1>لوحة تحكم الرقيب المسؤول</h1>
+            <button class="btn-login" style="width: auto; background: var(--danger);" onclick="location.reload()">تسجيل خروج</button>
+        </div>
+
+        <div class="card profile-card">
+            <h2 style="color: #cbd5e1;">🪪 بيانات الرقيب الشخصية</h2>
+            <div style="overflow-x: auto;">
+                <table style="color: white; border: none;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #475569;">
+                            <th style="color: #cbd5e1;">الاسم الكامل</th>
+                            <th style="color: #cbd5e1;">الرتبة</th>
+                            <th style="color: #cbd5e1;">رقم الهوية</th>
+                            <th style="color: #cbd5e1;">رقم الجوال</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profileInfo">
+                        </tbody>
+                </table>
             </div>
-    </div>
+        </div>
 
-    <div class="card" style="border-top-color: var(--warning);">
-        <h2>⏳ متابعة الطلبات الموجهة للإدارة</h2>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>اسم الفرد</th>
-                        <th>نوع الطلب</th>
-                        <th>وقت التوجيه</th>
-                        <th>حالة الطلب لدى الإدارة</th>
-                    </tr>
-                </thead>
-                <tbody id="followUpList">
-                    </tbody>
-            </table>
+        <div class="card">
+            <h2>⏳ متابعة الطلبات الموجهة للإدارة</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم الفرد</th>
+                            <th>نوع الطلب</th>
+                            <th>وقت التوجيه</th>
+                            <th>حالة الطلب لدى الإدارة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="followUpTable">
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    // إعدادات Firebase
-    const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <script>
+        // إعدادات Firebase
+        const firebaseConfig = { 
+            databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    // جلب بيانات الرقيب من الذاكرة المحلية (التي خزنها نظام الدعم الفني عند الدخول)
-    const currentName = localStorage.getItem('currentSupervisor');
-    
-    // 1. جلب بيانات الرقيب الكاملة من قاعدة البيانات لعرضها في الجدول العلوي
-    db.ref('supervisors').orderByChild('name').equalTo(currentName).on('value', snapshot => {
-        const profileBody = document.getElementById('profileData');
-        profileBody.innerHTML = '';
-        snapshot.forEach(child => {
-            const data = child.val();
+        // وظيفة التحقق الآمنة
+        function verifyAccess() {
+            const userInput = document.getElementById('entryPass').value;
+            if (!userInput) return;
+
+            // البحث في السحابة عن رقيب يملك هذا الرمز
+            db.ref('supervisors').once('value', (snapshot) => {
+                let authFound = false;
+                let supervisorData = null;
+
+                snapshot.forEach((child) => {
+                    const sv = child.val();
+                    if (sv.secretCode === userInput) {
+                        authFound = true;
+                        supervisorData = sv;
+                    }
+                });
+
+                if (authFound) {
+                    // مسح الرمز من الذاكرة فوراً وإخفاء شاشة الدخول
+                    document.getElementById('entryPass').value = "";
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+
+                    // عرض بيانات الرقيب وبدء متابعة الطلبات
+                    renderProfile(supervisorData);
+                    trackAdminRequests(supervisorData.name);
+                } else {
+                    alert("⚠️ الرمز السري غير صحيح. يرجى مراجعة الدعم الفني.");
+                    document.getElementById('entryPass').value = "";
+                }
+            });
+        }
+
+        // عرض بيانات الرقيب في الجدول العلوي
+        function renderProfile(data) {
+            const profileBody = document.getElementById('profileInfo');
             profileBody.innerHTML = `
                 <tr>
                     <td><b>${data.name}</b></td>
@@ -97,55 +232,39 @@
                     <td>${data.nationalId}</td>
                     <td>${data.phone}</td>
                 </tr>`;
-        });
-    });
+        }
 
-    // 2. جلب الطلبات ومتابعة الحالات
-    db.ref('requests').on('value', snapshot => {
-        const followUpList = document.getElementById('followUpList');
-        const newRequests = document.getElementById('newRequests');
-        
-        followUpList.innerHTML = '';
-        newRequests.innerHTML = '';
+        // متابعة الطلبات الموجهة وحالتها لدى الإدارة
+        function trackAdminRequests(supervisorName) {
+            db.ref('requests').on('value', (snapshot) => {
+                const tableBody = document.getElementById('followUpTable');
+                tableBody.innerHTML = '';
 
-        snapshot.forEach(child => {
-            const req = child.val();
-            
-            // حالة متابعة الطلبات الموجهة للإدارة
-            if (req.directedToAdmin === true) {
-                let statusClass = 'status-pending';
-                let statusText = 'قيد معالجة الإدارة';
-                
-                if (req.adminAction === 'approved') { statusClass = 'status-approved'; statusText = 'تم القبول'; }
-                if (req.adminAction === 'rejected') { statusClass = 'status-rejected'; statusText = 'مرفوض'; }
+                snapshot.forEach((child) => {
+                    const req = child.val();
+                    
+                    // إظهار الطلبات الموجهة للإدارة فقط لمتابعة حالتها
+                    if (req.directedToAdmin === true) {
+                        let statusHTML = '';
+                        if (req.adminAction === 'approved') {
+                            statusHTML = '<span class="status-badge approved">✅ تم القبول من الإدارة</span>';
+                        } else if (req.adminAction === 'rejected') {
+                            statusHTML = '<span class="status-badge rejected">❌ مرفوض من الإدارة</span>';
+                        } else {
+                            statusHTML = '<span class="status-badge pending">⏳ قيد المعالجة الإدارية</span>';
+                        }
 
-                followUpList.innerHTML += `
-                    <tr>
-                        <td>${req.userName}</td>
-                        <td>${req.requestType}</td>
-                        <td>${req.directionTime || 'غير محدد'}</td>
-                        <td><span class="status ${statusClass}">${statusText}</span></td>
-                    </tr>`;
-            }
-            
-            // الطلبات الجديدة التي لم توجه بعد (للمعالجة)
-            else if (!req.actionBy) {
-                // كود عرض البطاقات لاتخاذ إجراء (قبول/رفض/توجيه)
-                // ... (نفس الكود السابق لمعالجة الطلبات)
-            }
-        });
-    });
-
-    // وظيفة توجيه الطلب للإدارة (تحدث الحالة ليظهر في جدول المتابعة)
-    function directToAdmin(reqId) {
-        db.ref('requests/' + reqId).update({
-            directedToAdmin: true,
-            directionTime: new Date().toLocaleTimeString(),
-            directedBy: currentName
-        }).then(() => {
-            alert("تم توجيه الطلب للإدارة بنجاح");
-        });
-    }
-</script>
+                        tableBody.innerHTML += `
+                            <tr>
+                                <td>${req.userName}</td>
+                                <td>${req.requestType}</td>
+                                <td>${req.directionTime || '-'}</td>
+                                <td>${statusHTML}</td>
+                            </tr>`;
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 </html>
