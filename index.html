@@ -10,6 +10,60 @@
             --accent: #3498db;
             --bg: #f4f7f6;
         }
+
+        /* تصميم شاشة التحميل */
+        #loader-wrapper {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .welcome-text {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: fadeInOut 2s infinite;
+        }
+
+        .progress-container {
+            width: 70%;
+            max-width: 300px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            animation: load 1.5s forwards ease-in-out;
+        }
+
+        @keyframes load {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* إخفاء المحتوى الرئيسي حتى ينتهي التحميل */
+        #main-content {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        /* التصميم العام */
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
             background: var(--bg);
@@ -28,56 +82,34 @@
             border-radius: 25px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
-        .logo {
-            font-size: 50px;
-            margin-bottom: 10px;
-        }
-        h1 {
-            color: var(--primary);
-            font-size: 22px;
-            margin-bottom: 5px;
-        }
-        p {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
+        .logo { font-size: 50px; margin-bottom: 10px; }
+        h1 { color: var(--primary); font-size: 22px; margin-bottom: 5px; }
+        p { color: #7f8c8d; font-size: 14px; margin-bottom: 30px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .menu-item {
-            padding: 20px;
-            border-radius: 15px;
-            text-decoration: none;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            padding: 20px; border-radius: 15px; text-decoration: none;
+            color: white; font-weight: bold; font-size: 18px;
+            transition: 0.3s; display: flex; align-items: center;
+            justify-content: center; gap: 10px;
         }
         .btn-user { background-color: #3498db; }
         .btn-sup { background-color: #2c3e50; }
         .btn-admin { background-color: #27ae60; }
         
-        .menu-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #bdc3c7;
-        }
+        .menu-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .footer { margin-top: 30px; font-size: 12px; color: #bdc3c7; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div id="loader-wrapper">
+        <div class="welcome-text">أهلاً بك في نظام طلبات الرخص الرقمي</div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
+
+    <div id="main-content" class="container">
         <div class="logo">📋</div>
         <h1>نظام الرخص الرقمي</h1>
         <p>مرحباً بك في نظام إدارة الرخص والاستئذان</p>
@@ -86,11 +118,9 @@
             <a href="Apply.html" class="menu-item btn-user">
                 <span>📝</span> تقديم طلب جديد
             </a>
-
             <a href="supervisor.html" class="menu-item btn-sup">
                 <span>👮</span> لوحة رقباء المجموعات
             </a>
-
             <a href="admin.html" class="menu-item btn-admin">
                 <span>🏢</span> الشؤون الإدارية
             </a>
@@ -100,6 +130,19 @@
             تطوير وإشراف: فهد مرزوق المخلفي
         </div>
     </div>
+
+    <script>
+        // وظيفة لإخفاء شاشة التحميل بعد انتهاء الانيميشن
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('loader-wrapper').style.opacity = '0';
+                setTimeout(function() {
+                    document.getElementById('loader-wrapper').style.display = 'none';
+                    document.getElementById('main-content').style.opacity = '1';
+                }, 500);
+            }, 1800); // مدة ظهور شاشة التحميل (1.8 ثانية)
+        });
+    </script>
 
 </body>
 </html>
