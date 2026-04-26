@@ -2,114 +2,168 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الدعم الفني - التحكم السحابي</title>
+    <title>لوحة الرقباء - نظام فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
-        .container { max-width: 800px; margin: 20px auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 15px; }
-        .section { background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #eee; }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; }
-        .btn { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-save { background: var(--success); color: white; width: 100%; }
-        .btn-danger { background: var(--danger); color: white; padding: 5px 12px; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
-        th { background: #f4f7f6; }
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
+        
+        /* شاشة الترحيب */
+        #welcome-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #2c3e50, #1a252f);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10000; color: white; transition: 1s;
+        }
+
+        .welcome-icon { font-size: 80px; animation: pulse 2s infinite; filter: drop-shadow(0 0 10px #3498db); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        /* تنسيق المحتوى */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        #main-content { opacity: 0; transition: 1s; }
+        .header { background: var(--primary); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; border-bottom: 4px solid var(--accent); }
+        
+        /* الكروت والجدول */
+        .request-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .table-container { background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+        th { background: #f8f9fa; color: var(--primary); }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-approve { background: var(--success); }
+        .btn-reject { background: var(--danger); }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .badge-success { background: #e8f8f5; color: #27ae60; }
+        .badge-danger { background: #fdedec; color: #e74c3c; }
+        .reason-input { width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #ddd; border-radius: 8px; display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>لوحة الدعم الفني والإعدادات ⚙️</h2>
-
-    <div class="section">
-        <h3>👥 إضافة وإدارة الرقباء</h3>
-        <div class="grid-inputs">
-            <input type="text" id="sName" placeholder="اسم الرقيب">
-            <input type="text" id="sRank" placeholder="الرتبة">
-            <input type="text" id="sPass" placeholder="الرمز السري">
-        </div>
-        <button class="btn btn-save" onclick="addSupervisor()">إضافة وتفعيل الصلاحيات ➕</button>
-        
-        <table>
-            <thead>
-                <tr><th>الاسم</th><th>الرتبة</th><th>الرمز</th><th>إجراء</th></tr>
-            </thead>
-            <tbody id="supTableBody"></tbody>
-        </table>
+    <div id="welcome-overlay">
+        <div class="welcome-icon">👮‍♂️</div>
+        <h2 id="welcome-name">مرحباً بسعادة الرقيب</h2>
+        <p>جاري التحقق من الصلاحيات...</p>
     </div>
 
-    <div class="section">
-        <h3>🔐 رمز دخول الشؤون الإدارية</h3>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="admPass" placeholder="أدخل الرمز الجديد">
-            <button class="btn" style="background:var(--primary); color:white;" onclick="updateAdminPass()">تحديث</button>
+    <div id="main-content">
+        <div class="header">
+            <h2>لوحة إدارة الرخص والاستئذان</h2>
+            <p>إشراف: فهد مرزوق المخلفي</p>
+        </div>
+
+        <h3>📥 طلبات بانتظار الإجراء</h3>
+        <div id="new-requests"></div>
+
+        <h3>🕒 سجل المتابعة والطلبات السابقة</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم الفرد</th>
+                        <th>الرتبة</th>
+                        <th>الهوية</th>
+                        <th>الجوال</th>
+                        <th>نوع الطلب</th>
+                        <th>الحالة</th>
+                        <th>السبب / الملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="completed-table"></tbody>
+            </table>
         </div>
     </div>
 
-    <button onclick="window.location.href='home.html'" style="width:100%; padding:15px; background:#bdc3c7; border:none; border-radius:10px; font-weight:bold;">العودة للرئيسية</button>
-</div>
+    <script>
+        // --- 1. قفل الأمان (يجب أن يكون في البداية) ---
+        if (localStorage.getItem('isAuth') !== 'true') {
+            alert("غير مصرح لك بالدخول مباشرة! يرجى إدخال الرمز من الصفحة الرئيسية.");
+            window.location.href = "index.html";
+        }
 
-<script>
-    // الرابط السحابي الخاص بك
-    const firebaseConfig = { 
-        databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" 
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        // --- 2. إعدادات Firebase ---
+        const firebaseConfig = {
+            databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    function loadSupervisors() {
-        db.ref('settings/supervisors').on('value', (snap) => {
-            let tbody = document.getElementById('supTableBody');
-            tbody.innerHTML = "";
-            if (snap.exists()) {
-                snap.forEach((child) => {
-                    let s = child.val();
-                    tbody.innerHTML += `<tr>
-                        <td>${s.name}</td>
-                        <td>${s.rank}</td>
-                        <td>****</td>
-                        <td><button class="btn btn-danger" onclick="deleteSup('${child.key}')">حذف</button></td>
-                    </tr>`;
+        // عرض اسم الرقيب والتحكم في شاشة الترحيب
+        const currentSup = localStorage.getItem('currentSupervisor') || "الرقيب";
+        document.getElementById('welcome-name').innerText = "مرحباً بسعادة " + currentSup;
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('welcome-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('welcome-overlay').style.display = 'none';
+                    document.getElementById('main-content').style.opacity = '1';
+                    // اختياري: مسح الصلاحية لضمان طلب الرمز في المرة القادمة
+                    // localStorage.removeItem('isAuth'); 
+                }, 1000);
+            }, 2000);
+        });
+
+        // --- 3. جلب البيانات وعرضها ---
+        db.ref('requests').on('value', (snapshot) => {
+            const newDiv = document.getElementById('new-requests');
+            const tableBody = document.getElementById('completed-table');
+            newDiv.innerHTML = ''; tableBody.innerHTML = '';
+
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    const id = child.key;
+
+                    if (data.status === 'pending') {
+                        newDiv.innerHTML += `
+                            <div class="request-card">
+                                <strong>👤 ${data.name} (${data.rank})</strong><hr>
+                                <p>هوية: ${data.nationalId} | جوال: ${data.phone}</p>
+                                <p><b>الطلب:</b> ${data.type}</p>
+                                <input type="text" id="reason-${id}" class="reason-input" placeholder="اكتب سبب الرفض هنا...">
+                                <div style="margin-top:15px; display:flex; gap:10px;">
+                                    <button class="btn btn-approve" onclick="action('${id}', 'approved')">قبول ✅</button>
+                                    <button class="btn btn-reject" id="btn-r-${id}" onclick="showR('${id}')">رفض ❌</button>
+                                    <button class="btn btn-reject" id="btn-c-${id}" style="display:none; background:#c0392b;" onclick="confirmR('${id}')">تأكيد الرفض</button>
+                                </div>
+                            </div>`;
+                    } else {
+                        const badg = data.status === 'approved' ? '<span class="badge badge-success">مقبول</span>' : '<span class="badge badge-danger">مرفوض</span>';
+                        tableBody.innerHTML += `
+                            <tr>
+                                <td><b>${data.name}</b></td>
+                                <td>${data.rank}</td>
+                                <td>${data.nationalId}</td>
+                                <td>${data.phone}</td>
+                                <td>${data.type}</td>
+                                <td>${badg}</td>
+                                <td style="color:#e74c3c;">${data.rejectReason || '-'}</td>
+                            </tr>`;
+                    }
                 });
             }
         });
-    }
 
-    function addSupervisor() {
-        let name = document.getElementById('sName').value;
-        let rank = document.getElementById('sRank').value;
-        let pass = document.getElementById('sPass').value;
+        function action(id, status) {
+            if(confirm('اعتماد الإجراء؟')) db.ref('requests/' + id).update({ status: status });
+        }
 
-        if(!name || !rank || !pass) return alert("أكمل البيانات");
+        function showR(id) {
+            document.getElementById('reason-' + id).style.display = 'block';
+            document.getElementById('btn-r-' + id).style.display = 'none';
+            document.getElementById('btn-c-' + id).style.display = 'inline-block';
+        }
 
-        db.ref('settings/supervisors/' + pass).set({
-            name: name,
-            rank: rank
-        }).then(() => {
-            alert("✅ تمت الإضافة بنجاح");
-            document.getElementById('sName').value = "";
-            document.getElementById('sRank').value = "";
-            document.getElementById('sPass').value = "";
-        }).catch(err => alert("خطأ: تأكد من تعديل الـ Rules"));
-    }
-
-    function deleteSup(id) {
-        if(confirm("حذف الرقيب؟")) db.ref('settings/supervisors/' + id).remove();
-    }
-
-    function updateAdminPass() {
-        let p = document.getElementById('admPass').value;
-        db.ref('settings/adminPass').set(p).then(() => alert("تم التحديث"));
-    }
-
-    loadSupervisors();
-</script>
+        function confirmR(id) {
+            const res = document.getElementById('reason-' + id).value;
+            if (!res) { alert('اكتب السبب'); return; }
+            db.ref('requests/' + id).update({ status: 'rejected', rejectReason: res });
+        }
+    </script>
 </body>
+</html>
 </html>
