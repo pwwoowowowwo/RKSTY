@@ -2,147 +2,71 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة الرقباء - نظام فهد المخلفي</title>
+    <title>لوحة الرقباء المطورة - فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --gold: #f1c40f; }
-        
-        /* شاشة الترحيب المبهرة */
-        #welcome-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #2c3e50, #1a252f);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 10000;
-            color: white;
-            transition: all 1s ease-in-out;
-        }
-
-        .welcome-content {
-            text-align: center;
-            animation: slideUp 1.2s ease-out;
-        }
-
-        .welcome-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 0 15px var(--accent));
-            animation: pulse 2s infinite;
-        }
-
-        .welcome-msg {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, #fff, var(--accent), #fff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        /* تنسيق الصفحة الأساسي */
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
-        .main-container { opacity: 0; transition: opacity 1s ease-in; }
         .header { background: var(--primary); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; border-bottom: 4px solid var(--accent); }
-        
-        h3 { color: var(--primary); border-right: 5px solid var(--accent); padding-right: 15px; margin: 25px 0; }
-
-        /* الكروت والجدول */
         .request-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #eee; }
         .table-container { background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #f0f0f0; }
-        th { background: #f8f9fa; color: var(--primary); font-weight: bold; }
-        
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        th { background: #f8f9fa; color: var(--primary); font-weight: bold; position: sticky; top: 0; }
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; }
         .btn-approve { background: var(--success); }
         .btn-reject { background: var(--danger); }
-        .btn:hover { transform: scale(1.05); opacity: 0.9; }
-
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .badge { padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
         .badge-success { background: #e8f8f5; color: #27ae60; }
         .badge-danger { background: #fdedec; color: #e74c3c; }
-        
-        .reason-input { width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #ddd; border-radius: 8px; display: none; border-right: 4px solid var(--danger); }
+        .reason-input { width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #ddd; border-radius: 8px; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="welcome-overlay">
-        <div class="welcome-content">
-            <div class="welcome-icon">👮‍♂️</div>
-            <div class="welcome-msg">مرحباً بسعادة الرقيب</div>
-            <p style="color: #bdc3c7; letter-spacing: 1px;">جاري تحضير لوحة التحكم والطلبات...</p>
-        </div>
+    <div class="header">
+        <h2>لوحة إدارة الرخص والاستئذان</h2>
+        <p>بإشراف: فهد مرزوق المخلفي</p>
     </div>
 
-    <div id="main-content" class="main-container">
-        <div class="header">
-            <h2>لوحة إدارة الرخص والاستئذان</h2>
-            <p id="supervisor-name-display">بإشراف فهد مرزوق المخلفي</p>
-        </div>
+    <h3>📥 طلبات تحتاج إجراء</h3>
+    <div id="new-requests"></div>
 
-        <h3>📥 طلبات تحتاج موافقتك</h3>
-        <div id="new-requests"></div>
-
-        <h3>🕒 سجل المتابعة والطلبات السابقة</h3>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>اسم الفرد</th>
-                        <th>الرتبة</th>
-                        <th>رقم الهوية</th>
-                        <th>الجوال</th>
-                        <th>نوع الطلب</th>
-                        <th>الحالة</th>
-                        <th>السبب / ملاحظات</th>
-                    </tr>
-                </thead>
-                <tbody id="completed-table"></tbody>
-            </table>
-        </div>
+    <h3>🕒 سجل المتابعة (يتضمن بيانات المسؤول عن الإجراء)</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>اسم الفرد</th>
+                    <th>رتبة الفرد</th>
+                    <th>هوية الفرد</th>
+                    <th>جوال الفرد</th>
+                    <th>نوع الطلب</th>
+                    <th>الحالة</th>
+                    <th>سبب الرفض</th>
+                    <th style="background: #eef2f3;">اسم الرقيب المسؤول</th>
+                    <th style="background: #eef2f3;">رتبة الرقيب</th>
+                </tr>
+            </thead>
+            <tbody id="completed-table"></tbody>
+        </table>
     </div>
 
     <script>
-        const firebaseConfig = {
-            databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/"
-        };
+        const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // تأثير الترحيب
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const overlay = document.getElementById('welcome-overlay');
-                const content = document.getElementById('main-content');
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    content.style.opacity = '1';
-                }, 1000);
-            }, 2500); // تظهر لمدة ثانيتين ونصف
-        });
+        // الحصول على بيانات الرقيب الحالي المسجل دخوله
+        const currentSupName = localStorage.getItem('currentSupervisor') || "غير مسجل";
+        const currentSupRank = localStorage.getItem('currentSupervisorRank') || "رقيب";
 
-        // جلب البيانات (نفس الكود السابق مع تحسينات العرض)
         db.ref('requests').on('value', (snapshot) => {
             const newDiv = document.getElementById('new-requests');
             const tableBody = document.getElementById('completed-table');
-            newDiv.innerHTML = '';
-            tableBody.innerHTML = '';
+            newDiv.innerHTML = ''; tableBody.innerHTML = '';
 
             if (snapshot.exists()) {
                 snapshot.forEach((child) => {
@@ -152,59 +76,52 @@
                     if (data.status === 'pending') {
                         newDiv.innerHTML += `
                             <div class="request-card">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <strong>👤 ${data.name} - ${data.rank}</strong>
-                                    <span class="badge" style="background:#ebf5fb; color:#3498db;">طلب جديد</span>
+                                <strong>👤 ${data.name} - ${data.rank}</strong>
+                                <p>هوية: ${data.nationalId} | جوال: ${data.phone}</p>
+                                <p>الطلب: ${data.type}</p>
+                                <input type="text" id="reason-${id}" class="reason-input" placeholder="اكتب سبب الرفض...">
+                                <div style="margin-top:10px;">
+                                    <button class="btn btn-approve" onclick="process('${id}', 'approved')">موافقة ✅</button>
+                                    <button class="btn btn-reject" id="btn-r-${id}" onclick="document.getElementById('reason-${id}').style.display='block'; this.style.display='none'; document.getElementById('btn-c-${id}').style.display='inline-block';">رفض ❌</button>
+                                    <button class="btn btn-reject" id="btn-c-${id}" style="display:none;" onclick="confirmR('${id}')">تأكيد الرفض</button>
                                 </div>
-                                <p style="font-size:14px; color:#666;">الهوية: ${data.nationalId} | الجوال: ${data.phone}</p>
-                                <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin:10px 0;">
-                                    <strong>نوع الطلب:</strong> ${data.type}
-                                </div>
-                                <input type="text" id="reason-${id}" class="reason-input" placeholder="اكتب سبب الرفض هنا ليراه الفرد...">
-                                <div style="display:flex; gap:10px; margin-top:15px;">
-                                    <button class="btn btn-approve" onclick="updateStatus('${id}', 'approved')">إقرار وموافقة ✅</button>
-                                    <button class="btn btn-reject" id="btn-rej-${id}" onclick="showReason('${id}')">رفض الطلب ❌</button>
-                                    <button class="btn btn-reject" id="btn-conf-${id}" style="display:none; background:#c0392b;" onclick="confirmReject('${id}')">تأكيد الرفض النهائي</button>
-                                </div>
-                            </div>
-                        `;
+                            </div>`;
                     } else {
-                        const sBadge = data.status === 'approved' ? 
-                            '<span class="badge badge-success">تم القبول</span>' : 
-                            '<span class="badge badge-danger">مرفوض</span>';
-                        
+                        const sBadge = data.status === 'approved' ? '<span class="badge badge-success">تم القبول</span>' : '<span class="badge badge-danger">مرفوض</span>';
                         tableBody.innerHTML += `
                             <tr>
-                                <td><b>${data.name}</b></td>
+                                <td>${data.name}</td>
                                 <td>${data.rank}</td>
                                 <td>${data.nationalId}</td>
                                 <td>${data.phone}</td>
                                 <td>${data.type}</td>
                                 <td>${sBadge}</td>
-                                <td style="color:#e74c3c; font-size:13px;">${data.rejectReason || '-'}</td>
-                            </tr>
-                        `;
+                                <td>${data.rejectReason || '-'}</td>
+                                <td style="font-weight:bold; color:var(--primary);">${data.processedBy || '-'}</td>
+                                <td>${data.processedByRank || '-'}</td>
+                            </tr>`;
                     }
                 });
             }
         });
 
-        function updateStatus(id, status) {
-            if(confirm('هل تود اعتماد الموافقة على هذا الطلب؟')) {
-                db.ref('requests/' + id).update({ status: status });
-            }
+        function process(id, status) {
+            db.ref('requests/' + id).update({
+                status: status,
+                processedBy: currentSupName, // تخزين اسم الرقيب اللي وافق
+                processedByRank: currentSupRank // تخزين رتبة الرقيب اللي وافق
+            });
         }
 
-        function showReason(id) {
-            document.getElementById('reason-' + id).style.display = 'block';
-            document.getElementById('btn-rej-' + id).style.display = 'none';
-            document.getElementById('btn-conf-' + id).style.display = 'inline-block';
-        }
-
-        function confirmReject(id) {
+        function confirmR(id) {
             const reason = document.getElementById('reason-' + id).value;
-            if (!reason) { alert('يجب كتابة سبب الرفض للتوضيح للفرد'); return; }
-            db.ref('requests/' + id).update({ status: 'rejected', rejectReason: reason });
+            if (!reason) { alert('اكتب السبب'); return; }
+            db.ref('requests/' + id).update({
+                status: 'rejected',
+                rejectReason: reason,
+                processedBy: currentSupName, // تخزين اسم الرقيب اللي رفض
+                processedByRank: currentSupRank
+            });
         }
     </script>
 </body>
