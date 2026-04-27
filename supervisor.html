@@ -7,8 +7,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #1a365d; --accent: #2d3748; --bg: #f7fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--primary); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        :root { --primary: #1a365d; --accent: #3498db; --bg: #f7fafc; --success: #059669; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--primary); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
         #loginOverlay { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .pin-input { width: 100%; padding: 15px; font-size: 24px; text-align: center; border: 2px solid #e2e8f0; border-radius: 10px; margin: 20px 0; outline: none; }
         #mainDashboard { display: none; background: var(--bg); width: 100%; height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
@@ -16,15 +16,17 @@
         .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
+        .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 5px; font-weight: bold; float: left; }
+        .detail-item { font-size: 14px; color: #4a5568; margin: 4px 0; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
-    <h2>دخول الرقباء</h2>
+    <h2 style="color: var(--primary);">دخول الرقباء</h2>
     <p>أدخل الرمز السري الفردي</p>
     <input type="password" id="pinCode" class="pin-input" placeholder="••••">
-    <button class="btn btn-primary" id="loginBtn" onclick="checkAccess()">دخول اللوحة</button>
+    <button class="btn btn-primary" onclick="checkAccess()">فتح اللوحة</button>
 </div>
 
 <div id="mainDashboard">
@@ -33,8 +35,12 @@
             <h3 id="displayName" style="margin:0;">تحقق...</h3>
             <p id="displayRank" style="margin:5px 0 0; color: #718096;"></p>
         </div>
-        <h4 style="border-right: 4px solid var(--primary); padding-right:10px;">📥 الطلبات الواردة لك</h4>
+
+        <h4 style="border-right: 4px solid var(--accent); padding-right:10px;">📥 طلبات ميدانية بانتظار إقرارك</h4>
         <div id="requestsList"></div>
+
+        <h4 style="border-right: 4px solid var(--success); padding-right:10px; margin-top:30px;">⏳ متابعة حالة الطلبات الموجهة للإدارة</h4>
+        <div id="historyList"></div>
     </div>
 </div>
 
@@ -46,62 +52,67 @@
 
     function checkAccess() {
         const pin = document.getElementById('pinCode').value;
-        const btn = document.getElementById('loginBtn');
-        btn.innerText = "جاري التحقق...";
-        
-        // البحث في قائمة supervisors التي يديرها الدعم الفني
         db.ref('supervisors').once('value', snapshot => {
             let found = false;
             snapshot.forEach(child => {
-                const data = child.val();
-                if (data.secretCode === pin) {
-                    activeSergeant = data;
+                if (child.val().secretCode === pin) {
+                    activeSergeant = child.val();
                     found = true;
                 }
             });
-
             if (found) {
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('mainDashboard').style.display = 'block';
                 document.getElementById('displayName').innerText = activeSergeant.name;
                 document.getElementById('displayRank').innerText = activeSergeant.rank;
                 startSync();
-            } else {
-                alert("الرمز غير صحيح!");
-                btn.innerText = "دخول اللوحة";
-            }
+            } else { alert("الرمز غير صحيح!"); }
         });
     }
 
     function startSync() {
         db.ref('requests').on('value', snapshot => {
             const list = document.getElementById('requestsList');
-            list.innerHTML = '';
+            const history = document.getElementById('historyList');
+            list.innerHTML = ''; history.innerHTML = '';
+
             snapshot.forEach(child => {
                 const req = child.val();
-                // الفلترة: الطلب موجه لهذا الرقيب + لم يوافق عليه بعد
+                
+                // 1. طلبات بانتظار إقرار الرقيب
                 if (!req.directedToAdmin && req.directedToName === activeSergeant.name) {
                     list.innerHTML += `
                         <div class="card">
-                            <strong>${req.userName}</strong>
-                            <p style="font-size:14px; color:#718096; margin:5px 0;">الرتبة: ${req.userRank} | النوع: ${req.requestType}</p>
-                            <p style="font-size:14px; color:#718096; margin:5px 0;">المدة: ${req.duration}</p>
-                            <button class="btn btn-primary" onclick="approve('${child.key}')">إقرار التغطية وتوجيه للإدارة</button>
+                            <div style="font-weight: bold;">${req.userName}</div>
+                            <div class="detail-item">الرتبة: ${req.userRank} | الوردية: ${req.shift}</div>
+                            <div class="detail-item">المدة: ${req.duration}</div>
+                            <button class="btn btn-primary" style="margin-top:10px;" onclick="approve('${child.key}')">إقرار التغطية وتوجيه للإدارة</button>
+                        </div>`;
+                }
+
+                // 2. طلبات تم توجيهها ويتابعها الرقيب (للتأكد من ظهور بياناته في الجدول)
+                if (req.directedToAdmin && req.directedBy === activeSergeant.name) {
+                    const isAdminDone = req.adminAction === 'approved';
+                    history.innerHTML += `
+                        <div class="card" style="border-right-color: #cbd5e1;">
+                            <span class="status-badge" style="background:${isAdminDone?'#dcfce7':'#fef3c7'}">${isAdminDone?'معتمد ✅':'بانتظار الإدارة'}</span>
+                            <div style="font-weight: bold;">${req.userName}</div>
+                            <div class="detail-item">الرقيب المسؤول: ${req.directedBy} (${req.sergeantRank})</div>
                         </div>`;
                 }
             });
-            if(list.innerHTML === "") list.innerHTML = "<p style='text-align:center; color:#999;'>لا توجد طلبات جديدة موجهة لك.</p>";
         });
     }
 
     function approve(id) {
-        if (confirm("أقر بأن الموقع مغطى ميدانياً؟")) {
+        if (confirm("هل تقر بتغطية الموقع ميدانياً؟")) {
+            // تحديث البيانات لضمان ظهور "بيانات الرقيب" كاملة في جدول الإدارة
             db.ref('requests/' + id).update({
                 directedToAdmin: true,
-                directedBy: activeSergeant.name,
-                sergeantRank: activeSergeant.rank,
-                status: "موجه للإدارة"
-            }).then(() => alert("تم التوجيه بنجاح."));
+                directedBy: activeSergeant.name,    // اسم الرقيب
+                sergeantRank: activeSergeant.rank,  // رتبة الرقيب
+                status: "موجه للإدارة ومغطى ميدانياً"
+            }).then(() => alert("تم التوجيه للإدارة بنجاح."));
         }
     }
 </script>
