@@ -2,93 +2,84 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>نظام طلب الرخص والمتابعة - فهد المخلفي</title>
+    <title>نظام طلب الرخص - فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { 
-            --primary: #2c3e50; /* لون الأزرار والعناوين الرئيسية */
-            --accent: #3498db;  /* لون العناوين الفرعية وحواف التركيز */
-            --bg: #00adb5;       /* لون الخلفية الرئيسية من الصورة */
-            --card-bg: white;
-            --success-color: #27ae60;
-            --wait-color: #f39c12;
-        }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #00adb5; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); padding: 15px; margin: 0; }
-        .app-container { max-width: 600px; margin: auto; }
-        .main-card { background: var(--card-bg); padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        h2.card-title { text-align: center; color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #555; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; background: #fff; }
-        input:focus, select:focus { border-color: var(--accent); }
-        .btn-submit { width: 100%; padding: 15px; margin-top: 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-submit:hover { background: var(--accent); }
-
-        /* ستايل قسم المتابعة (مطابق للصورة الثانية) */
-        .search-row { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-search { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 0 20px; cursor: pointer; font-weight: bold; }
-        .request-item { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid #e2e8f0; position: relative; }
-        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-        .date-text { color: #666; font-size: 14px; float: left; }
-        .details-row { clear: both; color: #555; font-size: 14px; margin-top: 5px; }
+        .main-card { max-width: 550px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        h2 { text-align: center; color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        label { display: block; margin-top: 12px; font-weight: bold; color: #555; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .btn-submit { width: 100%; padding: 15px; margin-top: 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        
+        /* قسم الاستعلام */
+        .search-box { display: flex; gap: 8px; margin-top: 15px; }
+        .btn-search { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 0 20px; cursor: pointer; }
+        .result-item { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid #e2e8f0; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <div class="main-card">
-            <h2 class="card-title">نموذج طلب رخصة 📝</h2>
-            
-            <label>الاسم الكامل:</label>
-            <input type="text" id="uName" placeholder="أدخل اسمك الثلاثي">
+    <div class="main-card">
+        <h2>نموذج طلب رخصة 📝</h2>
+        
+        <label>الرتبة:</label>
+        <select id="uRank">
+            <option value="جندي">جندي</option>
+            <option value="جندي أول">جندي أول</option>
+            <option value="عريف">عريف</option>
+            <option value="وكيل رقيب">وكيل رقيب</option>
+            <option value="رقيب">رقيب</option>
+        </select>
 
-            <label>رقم الهوية:</label>
-            <input type="number" id="uID" placeholder="أدخل رقم الهوية">
+        <label>الاسم الكامل:</label>
+        <input type="text" id="uName" placeholder="أدخل اسمك الثلاثي">
 
-            <label>تاريخ الاستئذان:</label>
-            <input type="date" id="uDate">
+        <label>رقم الهوية:</label>
+        <input type="number" id="uID" placeholder="أدخل رقم الهوية">
 
-            <label>الوردية:</label>
-            <select id="uShift">
-                <option value="الوردية الأولى">الوردية الأولى</option>
-                <option value="الوردية الثانية">الوردية الثانية</option>
-                <option value="الوردية الثالثة">الوردية الثالثة</option>
-            </select>
+        <label>رقم الجوال:</label>
+        <input type="tel" id="uPhone" placeholder="05xxxxxxxx">
 
-            <label>المدة المطلوبة:</label>
-            <select id="uDuration">
-                <option value="استلام واحد">استلام واحد</option>
-                <option value="استلامين">استلامين</option>
-                <option value="يوم واحد">يوم واحد</option>
-            </select>
+        <label>تاريخ الاستئذان:</label>
+        <input type="date" id="uDate">
 
-            <label>توجيه الطلب للرقيب:</label>
-            <select id="targetSup">
-                <option value="">جاري تحميل القائمة...</option>
-            </select>
+        <label>الوردية:</label>
+        <select id="uShift">
+            <option value="الوردية الأولى">الوردية الأولى</option>
+            <option value="الوردية الثانية">الوردية الثانية</option>
+            <option value="الوردية الثالثة">الوردية الثالثة</option>
+        </select>
 
-            <label>ملاحظات (اختياري):</label>
-            <textarea id="uReason" placeholder="اكتب ملاحظاتك هنا.." rows="2"></textarea>
+        <label>المدة المطلوبة:</label>
+        <select id="uDuration">
+            <option value="استلام واحد">استلام واحد</option>
+            <option value="استلامين">استلامين</option>
+            <option value="يوم واحد">يوم واحد</option>
+        </select>
 
-            <button class="btn-submit" onclick="sendRequest()">إرسال الطلب الآن 🚀</button>
+        <label>توجيه الطلب للرقيب:</label>
+        <select id="targetSup">
+            <option value="">جاري تحميل القائمة...</option>
+        </select>
+
+        <button class="btn-submit" onclick="sendRequest()">إرسال الطلب للرقيب 🚀</button>
+    </div>
+
+    <div class="main-card">
+        <h2 style="font-size: 1.2em;">🔍 متابعة حالة طلبك</h2>
+        <div class="search-box">
+            <input type="number" id="searchID" placeholder="أدخل رقم الهوية للبحث">
+            <button class="btn-search" onclick="liveTrack()">بحث</button>
         </div>
-
-        <div class="main-card">
-            <h2 class="card-title">🔍 متابعة حالة طلبك</h2>
-            <p style="text-align:center; color:#666; margin-top:5px;">أدخل رقم الهوية لعرض حالة طلباتك الحالية</p>
-            <div class="search-row">
-                <input type="number" id="searchID" placeholder="أدخل رقم الهوية">
-                <button class="btn-search" onclick="liveTrack()">بحث</button>
-            </div>
-            <div id="trackingContent">
-                <p style="text-align:center; color:#999; margin-top:15px;">ادخل رقم الهوية والضغط على بحث</p>
-            </div>
-        </div>
+        <div id="trackingContent"></div>
     </div>
 
     <script>
-        // إعدادات Firebase الخاصة بك
         const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -102,65 +93,53 @@
             });
         });
 
-        // وظيفة إرسال الطلب
+        // إرسال الطلب بكامل البيانات
         function sendRequest() {
             let name = document.getElementById('uName').value;
             let id = document.getElementById('uID').value;
+            let phone = document.getElementById('uPhone').value;
             let target = document.getElementById('targetSup').value;
 
-            if(!name || !id || !target) return alert("يرجى إكمال البيانات الأساسية");
+            if(!name || !id || !phone || !target) return alert("يرجى إكمال كافة البيانات");
 
             let data = {
+                userRank: document.getElementById('uRank').value,
                 userName: name,
                 nationalID: id,
+                userPhone: phone,
                 requestDate: document.getElementById('uDate').value,
                 shift: document.getElementById('uShift').value,
                 duration: document.getElementById('uDuration').value,
                 directedToName: target,
-                notes: document.getElementById('uReason').value,
-                status: "بانتظار موافقة الميدان",
-                directedBy: target, // تم التوجيه بواسطة الفرد لهذا الرقيب
+                status: "بانتظار إقرار الميدان",
                 directedToAdmin: false,
                 timestamp: Date.now()
             };
 
             db.ref('requests').push(data).then(() => {
-                alert("تم إرسال طلبك بنجاح ✅.. يمكنك المتابعة برقم هويتك.");
+                alert("تم إرسال الطلب بنجاح ✅");
                 document.getElementById('uName').value = "";
                 document.getElementById('uID').value = "";
-                // يمكن تفعيل البحث التلقائي بعد الإرسال هنا: liveTrackById(id);
+                document.getElementById('uPhone').value = "";
             });
         }
 
-        // وظيفة المتابعة الاحترافية (مطابقة للصورة الثانية)
         function liveTrack() {
             const searchID = document.getElementById('searchID').value;
             const content = document.getElementById('trackingContent');
-            if(searchID.length < 6) { content.innerHTML = "<p style='text-align:center; color:red; font-size:14px; margin-top:15px;'>رقم الهوية غير صحيح</p>"; return; }
-
             db.ref('requests').orderByChild('nationalID').equalTo(searchID).on('value', snap => {
-                if(!snap.exists()) {
-                    content.innerHTML = "<p style='text-align:center; color:#999; margin-top:15px;'> لا توجد طلبات مسجلة لهذا الرقم.</p>";
-                    return;
-                }
-
+                if(!snap.exists()) { content.innerHTML = "<p style='text-align:center; color:#999;'>لا توجد نتائج</p>"; return; }
                 let html = "";
                 snap.forEach(child => {
                     let r = child.val();
-                    let isApproved = r.adminAction === 'approved';
-                    let isWithAdmin = r.directedToAdmin === true;
-                    let color = isApproved ? '#27ae60' : (isWithAdmin ? '#f39c12' : '#e67e22');
-                    let statusLabel = isApproved ? "تم الاعتماد النهائي ✅" : (isWithAdmin ? "موجه للإدارة ومغطى ميدانياً" : "بانتظار إقرار الميدان");
-
+                    let color = r.adminAction === 'approved' ? '#27ae60' : '#f39c12';
                     html += `
-                        <div class="request-item">
-                            <span class="date-text">${r.requestDate || '-'}</span>
+                        <div class="result-item">
+                            <span style="float:left; font-size:12px;">${r.requestDate}</span>
                             <div class="status-badge" style="background:${color}20; color:${color};">
-                                ${statusLabel}
+                                ${r.adminAction === 'approved' ? 'تم الاعتماد ✅' : r.status}
                             </div>
-                            <div class="details-row">بواسطة: ${r.userName}</div>
-                            <div class="details-row" style="margin-top:10px;"><b>الرقيب المقر:</b> ${r.directedBy || 'جاري المراجعة'}</div>
-                            <div class="details-row"><b>ملاحظات الإدارة:</b> ${r.adminNotes || '-'}</div>
+                            <div style="margin-top:10px; font-size:14px;">طلب: ${r.duration} | الوردية: ${r.shift}</div>
                         </div>`;
                 });
                 content.innerHTML = html;
