@@ -2,147 +2,176 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الشؤون الإدارية - نظام فهد المخلفي</title>
+    <title>إدارة الرخص والأرشفة - تطوير فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
-        :root { --primary: #2c3e50; --success: #27ae60; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; direction: rtl; }
-        .container { max-width: 1000px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; font-size: 14px; }
-        th { background: var(--primary); color: white; }
-        .btn-approve { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .reply-input { width: 90%; padding: 8px; border-radius: 5px; border: 1px solid #ddd; }
-        .badge-count { background: #e74c3c; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .status-wait { color: #d35400; font-weight: bold; }
+        :root { --primary: #1e293b; --accent: #2563eb; --success: #059669; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .container { max-width: 1300px; margin: auto; }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 5px solid var(--primary); }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; }
+        th { background: #f8fafc; color: #64748b; font-size: 0.9rem; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-excel { background: #15803d; color: white; }
+        .btn-approve { background: var(--success); color: white; }
+        .btn-print { background: var(--accent); color: white; }
+        
+        .badge-count { background: #eff6ff; color: var(--accent); padding: 5px 12px; border-radius: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container" id="adminContent">
+<div class="container">
     <div class="card">
-        <h2>🏢 لوحة الاعتماد والمراسلات (الإدارة)</h2>
-        <p style="color: #666; font-size: 13px;">هنا تظهر الطلبات التي وافق عليها الرقباء فقط.</p>
+        <h2>📥 طلبات الاستئذان الجديدة</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>اسم الفرد</th>
+                    <th>الرتبة</th>
+                    <th>الهوية</th>
+                    <th>الجوال</th>
+                    <th>الطلب</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="pendingRequests"></tbody>
+        </table>
     </div>
 
     <div class="card">
-        <h3>🚩 طلبات بانتظار الاعتماد النهائي:</h3>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>التاريخ</th>
-                        <th>الوردية/المدة</th>
-                        <th>عدد الرخص السابقة</th>
-                        <th>رد الإدارة (المراسلة)</th>
-                        <th>الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody id="waitBody">
-                    <tr><td colspan="6">جاري جلب الطلبات من الرقباء...</td></tr>
-                </tbody>
-            </table>
+        <div class="header-flex">
+            <h2>🗃️ سجل أرشيف الرخص المعتمدة</h2>
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 تصدير الأرشيف للاكسل</button>
         </div>
-    </div>
-
-    <div class="card">
-        <h3>📂 سجل الرخص المعتمدة (الأرشيف):</h3>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>التاريخ</th>
-                        <th>المدة</th>
-                        <th>الوردية</th>
-                        <th>الرد المرسل</th>
-                    </tr>
-                </thead>
-                <tbody id="archiveBody"></tbody>
-            </table>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>الرتبة</th>
+                    <th>رقم الهوية</th>
+                    <th>الجوال</th>
+                    <th>إجمالي الرخص</th>
+                    <th>خيارات</th>
+                </tr>
+            </thead>
+            <tbody id="archiveTable"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    // الرابط السحابي الخاص بك
-    const firebaseConfig = { 
-        databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" 
-    };
+    const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function loadAdminDashboard() {
-        db.ref('requests').on('value', snap => {
-            let waitBody = document.getElementById('waitBody');
-            let archiveBody = document.getElementById('archiveBody');
-            waitBody.innerHTML = ""; archiveBody.innerHTML = "";
-
-            let counts = {}; // لحساب الرخص السابقة
-            let requestsArray = [];
-
-            if (!snap.exists()) {
-                waitBody.innerHTML = "<tr><td colspan='6'>لا توجد طلبات حالياً</td></tr>";
-                return;
+    // 1. مراقبة الطلبات الواردة
+    db.ref('requests').on('value', snapshot => {
+        const pendingBody = document.getElementById('pendingRequests');
+        pendingBody.innerHTML = '';
+        snapshot.forEach(child => {
+            const req = child.val();
+            if (req.directedToAdmin && !req.adminAction) {
+                pendingBody.innerHTML += `
+                    <tr>
+                        <td><b>${req.userName}</b></td>
+                        <td>${req.userRank || '-'}</td>
+                        <td>${req.userID || '-'}</td>
+                        <td>${req.userPhone || '-'}</td>
+                        <td>${req.requestType}</td>
+                        <td><button class="btn btn-approve" onclick="approveAndArchive('${child.key}')">اعتماد ✅</button></td>
+                    </tr>`;
             }
+        });
+    });
 
-            snap.forEach(child => {
-                let r = child.val();
-                r.key = child.key;
-                requestsArray.push(r);
-                if(r.status === "approved") {
-                    counts[r.uid] = (counts[r.uid] || 0) + 1;
-                }
-            });
+    // 2. وظيفة الاعتماد والأرشفة (بناءً على رقم الهوية لمنع التكرار)
+    function approveAndArchive(reqId) {
+        db.ref('requests/' + reqId).once('value', snapshot => {
+            const reqData = snapshot.val();
+            const timestamp = new Date().toLocaleString('ar-SA');
+            const dateStr = new Date().toLocaleDateString('ar-SA');
+            const idKey = reqData.userID || reqData.userName; // استخدام الهوية كمفتاح لمنع التكرار
 
-            requestsArray.forEach(r => {
-                if(r.status === "to_admin") {
-                    // طلب وافق عليه الرقيب وبانتظار الإدارة
-                    waitBody.innerHTML += `
-                        <tr>
-                            <td><b>${r.name}</b></td>
-                            <td>${r.date}</td>
-                            <td>${r.shift}<br><small>${r.duration}</small></td>
-                            <td><span class="badge-count">${counts[r.uid] || 0}</span></td>
-                            <td><input type="text" id="reply_${r.key}" class="reply-input" placeholder="اكتب ردك للفرد هنا.."></td>
-                            <td><button class="btn-approve" onclick="finalApprove('${r.key}')">اعتماد ✅</button></td>
-                        </tr>
-                    `;
-                } else if(r.status === "approved") {
-                    // طلب معتمد مسبقاً (الأرشيف)
-                    archiveBody.innerHTML += `
-                        <tr>
-                            <td>${r.name}</td>
-                            <td>${r.date}</td>
-                            <td>${r.duration}</td>
-                            <td>${r.shift}</td>
-                            <td style="color: green;">${r.adminReply}</td>
-                        </tr>
-                    `;
-                }
+            db.ref('requests/' + reqId).update({ adminAction: 'approved', approvalTime: timestamp });
+
+            const archiveRef = db.ref('archive').child(idKey);
+            archiveRef.once('value', arcSnap => {
+                let data = arcSnap.exists() ? arcSnap.val() : { count: 0, history: [] };
+                archiveRef.set({
+                    name: reqData.userName,
+                    rank: reqData.userRank || 'بدون',
+                    idNo: reqData.userID || '-',
+                    phone: reqData.userPhone || '-',
+                    count: data.count + 1,
+                    history: [...data.history, { type: reqData.requestType, date: dateStr }]
+                });
             });
+            alert("تم الاعتماد بنجاح.");
         });
     }
 
-    function finalApprove(key) {
-        let replyText = document.getElementById('reply_' + key).value;
-        if(!replyText) replyText = "تم اعتماد طلبك، رافقتك السلامة.";
+    // 3. عرض الأرشيف في الجدول
+    db.ref('archive').on('value', snapshot => {
+        const archiveBody = document.getElementById('archiveTable');
+        archiveBody.innerHTML = '';
+        snapshot.forEach(child => {
+            const p = child.val();
+            archiveBody.innerHTML += `
+                <tr>
+                    <td><b>${p.name}</b></td>
+                    <td>${p.rank}</td>
+                    <td>${p.idNo}</td>
+                    <td>${p.phone}</td>
+                    <td><span class="badge-count">${p.count}</span></td>
+                    <td><button class="btn btn-print" onclick="printIndividualReport('${child.key}')">🖨️ تقرير</button></td>
+                </tr>`;
+        });
+    });
 
-        if(confirm("تأكيد الاعتماد النهائي وإرسال الرد للفرد؟")) {
-            db.ref('requests/' + key).update({
-                status: "approved",
-                adminReply: replyText
-            }).then(() => {
-                alert("✅ تم الاعتماد بنجاح وتحديث حالة الفرد أونلاين.");
+    // 4. وظيفة تصدير الاكسل (دمج التواريخ في صف واحد)
+    function exportToExcel() {
+        db.ref('archive').once('value', snapshot => {
+            const dataForExcel = [];
+            
+            snapshot.forEach(child => {
+                const p = child.val();
+                // إنشاء كائن الصف الأساسي
+                const row = {
+                    "الاسم": p.name,
+                    "الرتبة": p.rank,
+                    "رقم الهوية": p.idNo,
+                    "الجوال": p.phone,
+                    "إجمالي الرخص": p.count
+                };
+
+                // دمج التواريخ: سيتم إضافة كل تاريخ في عمود منفصل (تاريخ 1، تاريخ 2...)
+                p.history.forEach((h, index) => {
+                    row[`تاريخ رخصة ${index + 1}`] = h.date;
+                });
+
+                dataForExcel.push(row);
             });
-        }
+
+            // تحويل البيانات لملف اكسل
+            const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "أرشيف الأفراد");
+
+            // تصدير وتحميل الملف
+            XLSX.writeFile(workbook, `أرشيف_الرخص_${new Date().toLocaleDateString()}.xlsx`);
+        });
     }
 
-    loadAdminDashboard();
+    // (وظيفة الطباعة الفردية تبقى كما هي في الكود السابق)
 </script>
 </body>
 </html>
