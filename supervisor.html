@@ -2,134 +2,121 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>دخول المصرح لهم فقط - نظام فهد المخلفي</title>
+    <title>لوحة الرقباء - نظام فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--primary); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        :root { --primary: #1a365d; --accent: #2d3748; --success: #2f855a; --bg: #f7fafc; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--primary); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
         
-        /* شاشة القفل المركزية */
-        #loginOverlay { background: white; padding: 40px; border-radius: 25px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 9999; }
-        .pin-input { width: 100%; padding: 15px; font-size: 30px; text-align: center; border: 2px solid #e2e8f0; border-radius: 12px; margin: 20px 0; letter-spacing: 8px; outline: none; transition: 0.3s; }
-        .pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        /* شاشة الدخول */
+        #loginOverlay { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .pin-input { width: 100%; padding: 15px; font-size: 24px; text-align: center; border: 2px solid #e2e8f0; border-radius: 10px; margin: 20px 0; outline: none; }
         
-        /* اللوحة الرئيسية (مخفية تماماً) */
+        /* اللوحة الرئيسية */
         #mainDashboard { display: none; background: var(--bg); width: 100%; height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        
-        .info-table { width: 100%; background: white; border-radius: 15px; margin-bottom: 25px; border-collapse: collapse; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .info-table th { background: #1e293b; color: white; padding: 15px; }
-        .info-table td { padding: 15px; text-align: center; font-weight: bold; color: var(--accent); border-bottom: 1px solid #edf2f7; }
-
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; border-right: 6px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-direct { background: var(--accent); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .bg-wait { background: #fef3c7; color: #92400e; }
-        .bg-done { background: #dcfce7; color: #166534; }
+        .info-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-bottom: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .btn-login { background: var(--primary); color: white; }
+        .btn-approve { background: var(--primary); color: white; margin-top: 10px; }
+        .badge { padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
-    <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
-    <h2 style="margin: 0; color: #1e293b;">دخول الرقباء</h2>
-    <p style="color: #64748b;">أدخل الرمز السري المعد من الدعم الفني</p>
-    <input type="password" id="pinCode" class="pin-input" maxlength="4" placeholder="••••" autocomplete="off">
-    <button class="btn-direct" onclick="checkAccess()">فتح النظام</button>
+    <h2 style="color: var(--primary);">دخول الرقباء</h2>
+    <p style="color: #718096;">أدخل الرمز السري المسجل لدى الدعم الفني</p>
+    <input type="password" id="pinCode" class="pin-input" placeholder="••••">
+    <button class="btn btn-login" id="loginBtn" onclick="checkCloudAccess()">دخول النظام</button>
 </div>
 
 <div id="mainDashboard">
     <div style="max-width: 800px; margin: auto;">
-        <table class="info-table">
-            <thead>
-                <tr><th>الرقيب المسؤول</th><th>الرتبة</th><th>تغطية الموقع</th></tr>
-            </thead>
-            <tbody>
-                <tr><td id="nameDisplay">-</td><td id="rankDisplay">-</td><td style="color:#059669;">نشط ✅</td></tr>
-            </tbody>
-        </table>
+        <div class="info-card">
+            <h3 id="displayName" style="margin:0; color: var(--primary);">جاري التحقق...</h3>
+            <p id="displayRank" style="margin:5px 0 0; color: #718096;"></p>
+        </div>
 
-        <h3 style="border-right: 4px solid var(--accent); padding-right: 10px;">📥 طلبات بانتظار إقرارك</h3>
+        <h4 style="border-right: 4px solid var(--primary); padding-right: 10px;">📥 طلبات الميدان الواردة</h4>
         <div id="requestsList"></div>
 
-        <h3 style="border-right: 4px solid #64748b; padding-right: 10px; margin-top: 30px;">⏳ متابعة حالة الطلبات المرسلة</h3>
+        <h4 style="border-right: 4px solid #718096; padding-right: 10px; margin-top: 30px;">⏳ متابعة حالة الطلبات</h4>
         <div id="trackingList"></div>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase
     const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // قائمة الرقباء المصرح لهم (الأكواد السرية)
-    const accessKeys = {
-        "1234": { name: "فهد مرزوق المخلفي", rank: "رقيب" },
-        "5566": { name: "خالد العتيبي", rank: "رقيب" }
-    };
+    let activeSergeant = null;
 
-    let activeUser = null;
-
-    function checkAccess() {
+    // الربط مع مسار الدعم الفني (supervisors)
+    function checkCloudAccess() {
         const pin = document.getElementById('pinCode').value;
-        if (accessKeys[pin]) {
-            activeUser = accessKeys[pin];
-            
-            // تحويل الواجهة
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.body.style.background = "#f1f5f9";
-            document.body.style.display = "block";
-            document.body.style.overflow = "auto";
-            document.getElementById('mainDashboard').style.display = 'block';
-            
-            // تعبئة بيانات الجدول العلوي
-            document.getElementById('nameDisplay').innerText = activeUser.name;
-            document.getElementById('rankDisplay').innerText = activeUser.rank;
-            
-            // بدء سحب البيانات بعد التأكد من الهوية
-            startSync();
-        } else {
-            alert("⚠️ الرمز السري خاطئ! الدخول للمصرح لهم فقط.");
-            document.getElementById('pinCode').value = '';
-        }
+        const btn = document.getElementById('loginBtn');
+        btn.innerText = "جاري البحث في السحابة...";
+        btn.disabled = true;
+
+        db.ref('supervisors').once('value', snapshot => {
+            let found = false;
+            snapshot.forEach(child => {
+                const data = child.val();
+                // التحقق من مطابقة الرمز السري
+                if (data.secretCode === pin) {
+                    activeSergeant = data;
+                    found = true;
+                }
+            });
+
+            if (found) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.body.style.background = "#edf2f7";
+                document.getElementById('mainDashboard').style.display = 'block';
+                document.getElementById('displayName').innerText = activeSergeant.name;
+                document.getElementById('displayRank').innerText = activeSergeant.rank;
+                startSync();
+            } else {
+                alert("⚠️ الرمز غير صحيح أو غير مضاف في لوحة الدعم الفني.");
+                btn.innerText = "دخول النظام";
+                btn.disabled = false;
+            }
+        });
     }
 
     function startSync() {
         db.ref('requests').on('value', snapshot => {
             const list = document.getElementById('requestsList');
             const track = document.getElementById('trackingList');
-            list.innerHTML = '';
-            track.innerHTML = '';
+            list.innerHTML = ''; track.innerHTML = '';
             
             snapshot.forEach(child => {
                 const req = child.val();
 
-                // 1. عرض طلبات الأفراد الموجهة لهذا الرقيب بالتحديد
-                if (!req.directedToAdmin && req.directedToName === activeUser.name) {
+                // 1. عرض الطلبات الموجهة لهذا الرقيب بالتحديد
+                if (!req.directedToAdmin && req.directedToName === activeSergeant.name) {
                     list.innerHTML += `
                         <div class="card">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <strong>${req.userName}</strong>
-                                <span class="badge bg-wait">طلب جديد</span>
-                            </div>
-                            <p style="font-size:14px; color:#475569;">الرتبة: ${req.userRank} | التاريخ: ${req.requestDate}</p>
-                            <button class="btn-direct" onclick="approveAndForward('${child.key}')">إقرار تغطية الموقع وتوجيه للإدارة 🏛️</button>
+                            <strong>${req.userName}</strong>
+                            <p style="font-size:13px; color:#718096;">الرتبة: ${req.userRank} | التاريخ: ${req.requestDate}</p>
+                            <button class="btn btn-approve" onclick="forwardToAdmin('${child.key}')">إقرار تغطية الموقع وتوجيه للإدارة 🏛️</button>
                         </div>`;
                 }
 
-                // 2. متابعة الطلبات التي أرسلها الرقيب للإدارة مسبقاً
-                if (req.directedBy === activeUser.name) {
-                    const isApproved = req.adminAction === 'approved';
+                // 2. متابعة الطلبات المرسلة من قبل هذا الرقيب
+                if (req.directedBy === activeSergeant.name) {
+                    const isDone = req.adminAction === 'approved';
                     track.innerHTML += `
-                        <div class="card" style="border-right-color: ${isApproved ? '#059669' : '#f59e0b'}">
+                        <div class="card" style="border-right-color: ${isDone ? '#2f855a' : '#c53030'}">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <span><b>${req.userName}</b></span>
-                                <span class="badge ${isApproved ? 'bg-done' : 'bg-wait'}">
-                                    ${isApproved ? 'تم الاعتماد ✅' : 'بانتظار الإدارة ⏳'}
+                                <span class="badge" style="background:${isDone ? '#dcfce7':'#fff5f5'}; color:${isDone ? '#166534':'#c53030'}">
+                                    ${isDone ? 'تم الاعتماد ✅' : 'بانتظار الإدارة ⏳'}
                                 </span>
                             </div>
                         </div>`;
@@ -138,14 +125,14 @@
         });
     }
 
-    function approveAndForward(id) {
-        if (confirm(`أنا الرقيب/ ${activeUser.name}، أقر بأن الموقع مغطى بالكامل وأوافق على توجيه الطلب للإدارة.`)) {
+    function forwardToAdmin(id) {
+        if (confirm(`أنا الرقيب/ ${activeSergeant.name}، أقر بأن الموقع مغطى بالكامل.`)) {
             db.ref('requests/' + id).update({
                 directedToAdmin: true,
-                directedBy: activeUser.name,
-                sergeantRank: activeUser.rank,
+                directedBy: activeSergeant.name,
+                sergeantRank: activeSergeant.rank,
                 status: "موجه للإدارة"
-            }).then(() => alert("تم التوثيق والتوجيه بنجاح."));
+            }).then(() => alert("تم التوجيه بنجاح."));
         }
     }
 </script>
