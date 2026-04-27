@@ -55,7 +55,7 @@
     <div class="form-group">
         <label>توجيه الطلب إلى (الرقيب المسؤول)</label>
         <select id="directedToName">
-            <option value="">جاري تحميل قائمة الرقباء...</option>
+            <option value="">جاري تحميل قائمة الرقباء من السحابة...</option>
         </select>
     </div>
 
@@ -63,24 +63,28 @@
 </div>
 
 <script>
-    // إعدادات Firebase
+    // إعدادات Firebase - مربوطة بنفس قاعدة البيانات
     const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. جلب قائمة الرقباء آلياً من مسار الدعم الفني (supervisors)
+    // 1. تحديث قائمة الرقباء آلياً عند أي تغيير من لوحة الدعم الفني
     db.ref('supervisors').on('value', snapshot => {
         const select = document.getElementById('directedToName');
         select.innerHTML = '<option value="">اختر الرقيب المسؤول</option>';
         
-        snapshot.forEach(child => {
-            const data = child.val();
-            // إضافة اسم الرقيب للقائمة ليختاره الفرد
-            select.innerHTML += `<option value="${data.name}">${data.name} (${data.rank})</option>`;
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                const data = child.val();
+                // يظهر الاسم والرتبة المحددة من الدعم الفني فوراً
+                select.innerHTML += `<option value="${data.name}">${data.name} (${data.rank})</option>`;
+            });
+        } else {
+            select.innerHTML = '<option value="">لا يوجد رقباء مضافين حالياً</option>';
+        }
     });
 
-    // 2. وظيفة إرسال الطلب
+    // 2. وظيفة إرسال الطلب المربوطة بنظام الرقيب والإدارة
     function submitRequest() {
         const name = document.getElementById('userName').value;
         const rank = document.getElementById('userRank').value;
@@ -89,17 +93,18 @@
         const directedTo = document.getElementById('directedToName').value;
 
         if(!name || !directedTo) {
-            alert("يرجى إكمال البيانات واختيار الرقيب المسؤول");
+            alert("يرجى إكمال الاسم واختيار الرقيب المسؤول");
             return;
         }
 
+        // هيكلة البيانات لتتوافق مع لوحة الرقيب وجدول الإدارة
         const newRequest = {
             userName: name,
             userRank: rank,
             requestType: type,
             duration: duration,
-            directedToName: directedTo, // اسم الرقيب الذي سيظهر الطلب عنده
-            directedToAdmin: false,     // لم يصل للإدارة بعد
+            directedToName: directedTo, 
+            directedToAdmin: false,     // الحالة الأولية: عند الرقيب فقط
             status: "بانتظار موافقة الميدان",
             requestDate: new Date().toLocaleDateString('ar-SA'),
             timestamp: new Date().getTime()
@@ -107,8 +112,13 @@
 
         db.ref('requests').push(newRequest).then(() => {
             alert("تم إرسال طلبك بنجاح للرقيب المسؤول.");
-            // تصفير الحقول بعد الإرسال
-            document.querySelectorAll('input').forEach(i => i.value = '');
+            // إعادة تعيين الحقول
+            document.getElementById('userName').value = '';
+            document.getElementById('userRank').value = '';
+            document.getElementById('duration').value = '';
+            document.getElementById('directedToName').selectedIndex = 0;
+        }).catch(error => {
+            alert("حدث خطأ في الإرسال: " + error.message);
         });
     }
 </script>
