@@ -12,12 +12,11 @@
         .main-card { max-width: 550px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 25px; }
         h2 { text-align: center; color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
         label { display: block; margin-top: 12px; font-weight: bold; color: #555; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .btn-submit { width: 100%; padding: 15px; margin-top: 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        
-        /* قسم الاستعلام */
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
+        .btn-submit { width: 100%; padding: 15px; margin-top: 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-submit:hover { background: var(--accent); }
         .search-box { display: flex; gap: 8px; margin-top: 15px; }
-        .btn-search { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 0 20px; cursor: pointer; }
+        .btn-search { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 0 20px; cursor: pointer; font-weight: bold; }
         .result-item { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .status-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; }
     </style>
@@ -34,6 +33,7 @@
             <option value="عريف">عريف</option>
             <option value="وكيل رقيب">وكيل رقيب</option>
             <option value="رقيب">رقيب</option>
+            <option value="رقيب أول">رقيب أول</option>
         </select>
 
         <label>الاسم الكامل:</label>
@@ -64,16 +64,16 @@
 
         <label>توجيه الطلب للرقيب:</label>
         <select id="targetSup">
-            <option value="">جاري تحميل القائمة...</option>
+            <option value="">جاري تحميل الرقباء...</option>
         </select>
 
-        <button class="btn-submit" onclick="sendRequest()">إرسال الطلب للرقيب 🚀</button>
+        <button class="btn-submit" onclick="sendRequest()">إرسال الطلب الآن 🚀</button>
     </div>
 
     <div class="main-card">
-        <h2 style="font-size: 1.2em;">🔍 متابعة حالة طلبك</h2>
+        <h2 style="font-size: 1.2em;">🔍 استعلام عن حالة الطلب</h2>
         <div class="search-box">
-            <input type="number" id="searchID" placeholder="أدخل رقم الهوية للبحث">
+            <input type="number" id="searchID" placeholder="رقم الهوية للبحث">
             <button class="btn-search" onclick="liveTrack()">بحث</button>
         </div>
         <div id="trackingContent"></div>
@@ -89,24 +89,26 @@
             let select = document.getElementById('targetSup');
             select.innerHTML = '<option value="">-- اختر الرقيب المسؤول --</option>';
             snap.forEach(child => {
-                select.innerHTML += `<option value="${child.val().name}">${child.val().name} (${child.val().rank})</option>`;
+                let s = child.val();
+                select.innerHTML += `<option value="${s.name}">${s.name} (${s.rank})</option>`;
             });
         });
 
-        // إرسال الطلب بكامل البيانات
+        // إرسال الطلب مع التأكد من مسميات الأعمدة للشؤون
         function sendRequest() {
+            let rank = document.getElementById('uRank').value;
             let name = document.getElementById('uName').value;
             let id = document.getElementById('uID').value;
             let phone = document.getElementById('uPhone').value;
             let target = document.getElementById('targetSup').value;
 
-            if(!name || !id || !phone || !target) return alert("يرجى إكمال كافة البيانات");
+            if(!name || !id || !phone || !target) return alert("يرجى إكمال جميع البيانات");
 
             let data = {
-                userRank: document.getElementById('uRank').value,
-                userName: name,
-                nationalID: id,
-                userPhone: phone,
+                userRank: rank,      // الرتبة
+                userName: name,      // الاسم
+                nationalID: id,      // رقم الهوية (تأكد أن الجدول يقرأ هذا المسمى)
+                userPhone: phone,    // رقم الجوال
                 requestDate: document.getElementById('uDate').value,
                 shift: document.getElementById('uShift').value,
                 duration: document.getElementById('uDuration').value,
@@ -116,30 +118,45 @@
                 timestamp: Date.now()
             };
 
+            // الحفظ في قاعدة البيانات
             db.ref('requests').push(data).then(() => {
-                alert("تم إرسال الطلب بنجاح ✅");
+                alert("تم الإرسال بنجاح ✅");
                 document.getElementById('uName').value = "";
                 document.getElementById('uID').value = "";
                 document.getElementById('uPhone').value = "";
+                liveTrackById(id); // تحديث المتابعة فوراً
             });
         }
 
         function liveTrack() {
-            const searchID = document.getElementById('searchID').value;
+            let id = document.getElementById('searchID').value;
+            liveTrackById(id);
+        }
+
+        function liveTrackById(id) {
             const content = document.getElementById('trackingContent');
-            db.ref('requests').orderByChild('nationalID').equalTo(searchID).on('value', snap => {
-                if(!snap.exists()) { content.innerHTML = "<p style='text-align:center; color:#999;'>لا توجد نتائج</p>"; return; }
+            if(id.length < 6) return;
+
+            db.ref('requests').orderByChild('nationalID').equalTo(id).on('value', snap => {
+                if(!snap.exists()) {
+                    content.innerHTML = "<p style='text-align:center; color:#999; margin-top:15px;'>لا توجد طلبات سابقة</p>";
+                    return;
+                }
                 let html = "";
                 snap.forEach(child => {
                     let r = child.val();
                     let color = r.adminAction === 'approved' ? '#27ae60' : '#f39c12';
                     html += `
                         <div class="result-item">
-                            <span style="float:left; font-size:12px;">${r.requestDate}</span>
+                            <span style="float:left; font-size:11px; color:#888;">${r.requestDate}</span>
                             <div class="status-badge" style="background:${color}20; color:${color};">
-                                ${r.adminAction === 'approved' ? 'تم الاعتماد ✅' : r.status}
+                                ${r.adminAction === 'approved' ? 'تم الاعتماد النهائي ✅' : r.status}
                             </div>
-                            <div style="margin-top:10px; font-size:14px;">طلب: ${r.duration} | الوردية: ${r.shift}</div>
+                            <div style="margin-top:8px; font-size:14px; color:#444;">
+                                👤 ${r.userRank}/ ${r.userName}<br>
+                                📱 الجوال: ${r.userPhone}<br>
+                                ⏱️ المدة: ${r.duration}
+                            </div>
                         </div>`;
                 });
                 content.innerHTML = html;
