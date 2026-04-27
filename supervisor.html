@@ -2,7 +2,7 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة تحكم الرقيب - نظام فهد المخلفي</title>
+    <title>لوحة الرقباء الذكية - فهد المخلفي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -10,113 +10,149 @@
     <style>
         :root { --primary: #1e293b; --accent: #2563eb; --success: #059669; --warning: #f59e0b; --bg: #f8fafc; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--primary); }
-        .container { max-width: 800px; margin: auto; }
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-right: 5px solid var(--accent); }
-        .request-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .user-info h3 { margin: 0; color: var(--primary); font-size: 18px; }
-        .user-info p { margin: 5px 0; color: #64748b; font-size: 14px; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .badge-pending { background: #fef3c7; color: #92400e; }
-        .badge-approved { background: #dcfce7; color: #166534; }
         
-        .actions { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 14px; }
+        /* شاشة الدخول */
+        #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--primary); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .pin-input { width: 80%; padding: 15px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; letter-spacing: 5px; outline: none; }
+        
+        /* اللوحة الرئيسية */
+        .container { max-width: 900px; margin: auto; display: none; }
+        .info-table { width: 100%; background: white; border-radius: 12px; margin-bottom: 20px; border-collapse: collapse; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .info-table th { background: var(--primary); color: white; padding: 12px; font-size: 14px; }
+        .info-table td { padding: 12px; text-align: center; border: 1px solid #edf2f7; font-weight: bold; color: var(--accent); }
+
+        .section-title { border-right: 4px solid var(--accent); padding-right: 10px; margin: 25px 0 15px 0; font-size: 18px; }
+        
+        .card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-top: 4px solid #e2e8f0; }
+        .status-tracker { display: flex; justify-content: space-between; margin-top: 15px; background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 12px; }
+        
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s; }
         .btn-direct { background: var(--accent); color: white; }
-        .btn-direct:hover { background: #1d4ed8; }
-        .btn-reject { background: #fee2e2; color: #dc2626; }
+        .btn-direct:disabled { background: #cbd5e1; cursor: not-allowed; }
         
-        .empty-state { text-align: center; padding: 50px; color: #94a3b8; }
-        .info-row { display: flex; gap: 15px; margin-top: 8px; font-size: 13px; color: #475569; }
+        .badge { padding: 4px 10px; border-radius: 15px; font-size: 11px; }
+        .bg-wait { background: #fef3c7; color: #92400e; }
+        .bg-done { background: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1 style="margin:0; font-size: 22px;">إدارة طلبات الميدان</h1>
-        <p style="margin:5px 0 0 0; opacity: 0.8;">الرقيب المسؤول: فهد المخلفي</p>
-    </div>
-
-    <div id="requestsList">
-        <div class="empty-state">جاري تحميل الطلبات الجديدة...</div>
+<div id="loginOverlay">
+    <div class="login-card">
+        <h2>🔒 نظام الرقباء المصرح لهم</h2>
+        <p>الرجاء إدخال الرقم السري الخاص بك</p>
+        <input type="password" id="pinCode" class="pin-input" maxlength="4" placeholder="••••">
+        <button class="btn btn-direct" onclick="checkAccess()">دخول اللوحة</button>
     </div>
 </div>
 
+<div class="container" id="mainDashboard">
+    <table class="info-table">
+        <thead>
+            <tr>
+                <th>الرقيب المسؤول</th>
+                <th>الرتبة</th>
+                <th>الحالة التشغيلية</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="nameDisplay">-</td>
+                <td id="rankDisplay">-</td>
+                <td style="color: var(--success);">متصل الآن ●</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">📦 الطلبات الواردة للميدان</div>
+    <div id="requestsList"></div>
+
+    <div class="section-title">⏳ متابعة حالة الطلبات المرسلة للإدارة</div>
+    <div id="trackingList"></div>
+</div>
+
 <script>
-    // إعدادات Firebase الخاصة بك
     const firebaseConfig = { databaseURL: "https://rksti-29fc8-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // جلب الطلبات الخاصة بهذا الرقيب (أو كل الطلبات غير الموجهة للإدارة بعد)
-    db.ref('requests').on('value', snapshot => {
-        const listContainer = document.getElementById('requestsList');
-        listContainer.innerHTML = '';
-        let hasRequests = false;
+    // سجل الأكواد السرية للرقباء (تعديل الدعم الفني)
+    const accessKeys = {
+        "1122": { name: "فهد مرزوق المخلفي", rank: "رقيب" },
+        "2233": { name: "خالد العتيبي", rank: "رقيب" }
+    };
 
-        snapshot.forEach(child => {
-            const req = child.val();
-            
-            // عرض الطلبات التي لم توجه للإدارة بعد ولم يتم رفضها
-            if (!req.directedToAdmin && !req.adminAction && req.status !== 'rejected') {
-                hasRequests = true;
-                listContainer.innerHTML += `
-                    <div class="card">
-                        <div class="request-header">
-                            <div class="user-info">
-                                <h3>${req.userName}</h3>
-                                <p>الرتبة: ${req.userRank || 'غير محدد'}</p>
-                            </div>
-                            <span class="badge badge-pending">طلب جديد</span>
-                        </div>
-                        <div class="info-row">
-                            <span>📅 التاريخ: ${req.requestDate || '-'}</span>
-                            <span>⏳ المدة: <b>${req.duration || 'يوم'}</b></span>
-                        </div>
-                        <div style="margin-top:10px; font-size: 14px; color: #1e293b;">
-                            <strong>نوع الطلب:</strong> ${req.requestType}
-                        </div>
-                        <div class="actions">
-                            <button class="btn btn-direct" onclick="directToAdmin('${child.key}')">الموافقة وتوجيه للإدارة 🏛️</button>
-                            <button class="btn btn-reject" onclick="rejectRequest('${child.key}')">رفض</button>
-                        </div>
-                    </div>
-                `;
-            }
-        });
+    let activeUser = null;
 
-        if (!hasRequests) {
-            listContainer.innerHTML = '<div class="empty-state">لا توجد طلبات معلقة حالياً.</div>';
-        }
-    });
-
-    // وظيفة توجيه الطلب للإدارة (مع إقرار تغطية الموقع)
-    function directToAdmin(reqId) {
-        if (confirm("هل تقر بأن الموقع مغطى وتوافق على توجيه الطلب للشؤون الإدارية؟")) {
-            db.ref('requests/' + reqId).update({
-                directedToAdmin: true,
-                directedBy: "فهد المخلفي", // سيتم تسجيل اسمك كمسؤول وجه الطلب
-                status: "موجه للإدارة",
-                timestamp: new Date().getTime()
-            }).then(() => {
-                alert("تم توجيه الطلب بنجاح للإدارة.");
-            });
+    function checkAccess() {
+        const pin = document.getElementById('pinCode').value;
+        if (accessKeys[pin]) {
+            activeUser = accessKeys[pin];
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainDashboard').style.display = 'block';
+            document.getElementById('nameDisplay').innerText = activeUser.name;
+            document.getElementById('rankDisplay').innerText = activeUser.rank;
+            syncData();
+        } else {
+            alert("الكود السري غير صحيح!");
         }
     }
 
-    // وظيفة الرفض الميداني
-    function rejectRequest(reqId) {
-        const reason = prompt("يرجى كتابة سبب الرفض:");
-        if (reason) {
-            db.ref('requests/' + reqId).update({
-                status: "rejected",
-                rejectReason: reason,
-                adminAction: "rejected"
+    function syncData() {
+        db.ref('requests').on('value', snapshot => {
+            const list = document.getElementById('requestsList');
+            const track = document.getElementById('trackingList');
+            list.innerHTML = '';
+            track.innerHTML = '';
+            
+            snapshot.forEach(child => {
+                const req = child.val();
+
+                // 1. عرض الطلبات الجديدة الموجهة لهذا الرقيب فقط
+                if (!req.directedToAdmin && req.directedToName === activeUser.name) {
+                    list.innerHTML += `
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between;">
+                                <strong>${req.userName}</strong>
+                                <span class="badge bg-wait">طلب جديد</span>
+                            </div>
+                            <p style="font-size:13px; color:#64748b; margin: 5px 0;">الرتبة: ${req.userRank} | المدة: ${req.duration}</p>
+                            <button class="btn btn-direct" onclick="approveAndForward('${child.key}')">إقرار تغطية الموقع وتوجيه للإدارة 🏛️</button>
+                        </div>`;
+                }
+
+                // 2. متابعة حالة الطلبات التي أرسلها الرقيب للإدارة
+                if (req.directedBy === activeUser.name) {
+                    const isApproved = req.adminAction === 'approved';
+                    track.innerHTML += `
+                        <div class="card" style="border-top: 4px solid ${isApproved ? 'var(--success)' : 'var(--warning)'}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>${req.userName}</span>
+                                <span class="badge ${isApproved ? 'bg-done' : 'bg-wait'}">
+                                    ${isApproved ? 'تم الاعتماد ✅' : 'بانتظار الإدارة ⏳'}
+                                </span>
+                            </div>
+                            <div class="status-tracker">
+                                <span>الميدان: مكتمل</span>
+                                <span>الإدارة: ${isApproved ? 'مكتمل' : 'تحت الإجراء'}</span>
+                            </div>
+                        </div>`;
+                }
             });
+        });
+    }
+
+    function approveAndForward(id) {
+        if (confirm("أقر أنا الرقيب المسؤول بأن الموقع مغطى بالكامل وأتحمل المسؤولية عن هذا الطلب؟")) {
+            db.ref('requests/' + id).update({
+                directedToAdmin: true,
+                directedBy: activeUser.name,
+                sergeantRank: activeUser.rank,
+                status: "بانتظار الإدارة"
+            }).then(() => alert("تم الإقرار والتوجيه بنجاح."));
         }
     }
 </script>
-
 </body>
 </html>
